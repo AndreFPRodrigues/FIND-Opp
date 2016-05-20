@@ -6,7 +6,9 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.location.Location;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.support.v4.app.NotificationCompat;
@@ -101,6 +103,9 @@ public class GcmScheduler {
                         .setSmallIcon(R.drawable.warning_notification)
                         .setContentTitle(alert.getName()+" at " +alert.getDate().getHours() + ":" +alert.getDate().getMinutes()  )
                         .setContentText(alert.getDescription());
+                if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    mBuilder.setColor(Color.RED);
+                }
                 resultIntent.putExtra("knownLocation",true);
                 resultIntent.putExtra("isInside",true);
                 break;
@@ -109,6 +114,9 @@ public class GcmScheduler {
                         .setSmallIcon(R.drawable.warning_notification_y)
                         .setContentTitle(alert.getName()+" at " +alert.getDate().getHours() + ":" +alert.getDate().getMinutes()  )
                         .setContentText(alert.getDescription()).setOngoing(true);
+                if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    mBuilder.setColor(Color.YELLOW);
+                }
                 resultIntent.putExtra("knownLocation",false);
                 break;
             case NOT_IN_LOCATION:
@@ -116,11 +124,15 @@ public class GcmScheduler {
                         .setSmallIcon(R.drawable.warning_notification_g)
                         .setContentTitle(alert.getName()+" at " +alert.getDate().getHours() + ":" +alert.getDate().getMinutes()  )
                         .setContentText(alert.getDescription());
+                if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    mBuilder.setColor(Color.GREEN);
+                }
                 resultIntent.putExtra("knownLocation",true);
                 resultIntent.putExtra("isInside",false);
 
                 break;
         }
+
 
 
         // The stack builder object will contain an artificial back stack for the

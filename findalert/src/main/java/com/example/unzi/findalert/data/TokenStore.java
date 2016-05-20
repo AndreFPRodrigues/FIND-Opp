@@ -56,6 +56,10 @@ public class TokenStore {
         getSharedPreferences(context).edit().putBoolean(KEY_SENT_TOKEN_TO_SERVER, false).apply();
     }
 
+    public static synchronized String getMacAddress(Context context) {
+        return getSharedPreferences(context).getString(KEY_REGISTRATION_MAC, "unknown");
+    }
+
 
 
 }

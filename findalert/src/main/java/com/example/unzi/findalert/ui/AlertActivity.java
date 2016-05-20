@@ -18,12 +18,13 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 
 
 public class AlertActivity extends FragmentActivity  {
-
+    private final String TAG = AlertActivity.class.getSimpleName();
     private GoogleMap mMap;
     private Alert mAlert;
     private boolean mIsInside;
@@ -115,11 +116,15 @@ public class AlertActivity extends FragmentActivity  {
                 .add(new LatLng(mAlert.getLatEnd(), mAlert.getLonEnd()))
                 .add(new LatLng(mAlert.getLatStart(), mAlert.getLonEnd()))
                 .add(new LatLng(mAlert.getLatStart(), mAlert.getLonStart())).fillColor(R.color.transparent_gray);
+        Log.d(TAG, "Start Coords" + mAlert.getLatStart() + " " + mAlert.getLonStart());
+        Log.d(TAG, "End Coords" + mAlert.getLatEnd() + " " + mAlert.getLonEnd());
 
         LatLng focus = midPoint(mAlert.getLatStart(),  mAlert.getLonStart(),mAlert.getLatEnd(), mAlert.getLonEnd() );
+        LatLngBounds lngBounds= new LatLngBounds(new LatLng(mAlert.getLatEnd(), mAlert.getLonEnd()),new LatLng(mAlert.getLatStart(), mAlert.getLonStart()));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(lngBounds, 200,400,0));
 
-        mMap.moveCamera(CameraUpdateFactory.newLatLng(focus));
-        mMap.animateCamera(CameraUpdateFactory.zoomTo(11));
+        /*mMap.moveCamera(CameraUpdateFactory.newLatLng(focus));
+        mMap.animateCamera(CameraUpdateFactory.zoomTo(11));*/
 
         // Get back the mutable Polyline
         Polygon polyline = mMap.addPolygon(rectOptions);

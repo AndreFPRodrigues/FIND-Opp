@@ -25,7 +25,7 @@ public class MessageGenerator {
             mSensorsManager = sensormanager;
             mSensorService = sensorsService;
             mContext = context;
-            mMacAdress= DeviceUtils.getWifiMacAddress();
+            mMacAdress= com.example.unzi.findalert.data.TokenStore.getMacAddress(context);
         }
 
         @Override
