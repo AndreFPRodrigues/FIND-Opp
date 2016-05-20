@@ -318,7 +318,7 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
     }
 
     private void startFind() {
-        mConnector.requestStart(); 
+        mConnector.requestStart();  
     }
 
     private void stopFind() {
