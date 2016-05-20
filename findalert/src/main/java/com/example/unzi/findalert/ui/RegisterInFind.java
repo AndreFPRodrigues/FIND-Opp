@@ -39,7 +39,6 @@ public class RegisterInFind {
         if(!sentToken) {
             Intent myIntent = new Intent(mContext,MainActivity.class);
             myIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-
             mContext.startActivity(myIntent);
         }
     }

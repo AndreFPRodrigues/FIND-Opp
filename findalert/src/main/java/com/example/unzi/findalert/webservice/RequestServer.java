@@ -64,6 +64,7 @@ public class RequestServer {
     }
 
     private static void getTileDatabase(Context context) {
+        Log.d(TAG, "dbLocation:"+context.getFilesDir()+"/mapapp/world.sqlitedb");
         File bd = new File(context.getFilesDir()+"/mapapp/world.sqlitedb");
         DownloadFile d;
         if (!bd.exists()) {
