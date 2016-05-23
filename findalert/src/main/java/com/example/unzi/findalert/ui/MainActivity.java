@@ -1,6 +1,7 @@
 package com.example.unzi.findalert.ui;
 
 import android.accounts.AccountManager;
+import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -16,9 +17,11 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+
 import com.example.unzi.findalert.R;
 import com.example.unzi.findalert.data.TokenStore;
 import com.example.unzi.findalert.gcm.RegistrationIntentService;
@@ -44,10 +47,12 @@ public class MainActivity extends AppCompatActivity{
     // ui
     private View.OnClickListener mOnTryAgainListener;
     private View.OnClickListener mFinish;
+    private ProgressDialog mDialog;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
+        setContentView(R.layout.activity_register);
 
 
         final CoordinatorLayout coordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinatorLayout);
@@ -74,8 +79,13 @@ public class MainActivity extends AppCompatActivity{
                 boolean sentToken = TokenStore.isRegistered(getApplicationContext());
                 if (sentToken) {
                     RegisterInFind.sharedInstance(getApplicationContext()).registerCompleted();
-                    Snackbar.make(coordinatorLayout, "Congratulations! The registration is complete", Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.GREEN).setAction("Finish", mFinish).show();
-
+                    Snackbar snack = Snackbar.make(coordinatorLayout, "Congratulations! The registration is complete", Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.GREEN).setAction("Finish", mFinish);
+                    View view = snack.getView();
+                    CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams)view.getLayoutParams();
+                    params.gravity = Gravity.CENTER;
+                    view.setLayoutParams(params);
+                    snack.show();
+                    mDialog.dismiss();
                     //TODO make sure we have permissions
                 } else {
                     Log.d(TAG, "token not sent");
@@ -107,6 +117,14 @@ public class MainActivity extends AppCompatActivity{
                 }
             }
         }
+
+        //registering progress dialog
+        mDialog = new ProgressDialog(this); // this = YourActivity
+        mDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        mDialog.setMessage("Registering. Please wait...");
+        mDialog.setIndeterminate(true);
+        mDialog.setCanceledOnTouchOutside(false);
+        mDialog.show();
     }
 
 

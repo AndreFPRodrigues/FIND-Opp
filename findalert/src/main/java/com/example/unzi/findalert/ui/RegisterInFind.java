@@ -43,6 +43,10 @@ public class RegisterInFind {
         }
     }
 
+    public boolean isRegistered(){
+        return TokenStore.isRegistered(mContext);
+    }
+
     public void observeOnAlert(OnAlert onAlert){
          alertObservers.add(onAlert);
     }

@@ -127,7 +127,8 @@ public class PacketDownloadService  extends IntentService {
         //getting time of the last download
         //TODO have the time of the download per protocol instead of 1
         RequestParams params = new RequestParams();
-        params.put(LAST_DOWNLOAD, SynchronizedPackets.lastDownloadedSuccess(getApplicationContext()));
+        //TODO uniform timestap parameter, currently set has in routes webservice
+        params.put("ts", SynchronizedPackets.lastDownloadedSuccess(getApplicationContext()));
             SyncRestClient.get( downloadEndpoint,params, new JsonHttpResponseHandler() {
 
                 @Override

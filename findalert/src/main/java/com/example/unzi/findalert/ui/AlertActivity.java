@@ -28,6 +28,7 @@ public class AlertActivity extends FragmentActivity  {
     private GoogleMap mMap;
     private Alert mAlert;
     private boolean mIsInside;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
