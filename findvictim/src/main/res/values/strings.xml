@@ -1,9 +1,95 @@
 <resources>
+    <!-- Global -->
     <string name="app_name">Find Victim</string>
     <string name="action_settings">Settings</string>
-    <string name="start">Start</string>
-    <string name="stop">Stop</string>
     <string name="start_description">Announce your location and look for other people.</string>
     <string name="stop_description">Stop announcing your location and looking for others.</string>
+    <string name="navigation_drawer_open">Open navigation drawer</string>
+    <string name="navigation_drawer_close">Close navigation drawer</string>
+    <string name="record_msg">Record and send a voice message</string>
+
+    <!-- Menu -->
+    <string name="functions">Functions</string>
+    <string name="communication">Communication</string>
+    <string name="start">Start</string>
+    <string name="stop">Stop</string>
+    <string name="other">Other</string>
+    <string name="sos">S.O.S.</string>
+    <string name="picture">Take Picture</string>
+    <string name="send_msg">Send Text Message</string>
+    <string name="msg_board">Message Board</string>
+    <string name="info">Additional Information</string>
+    <string name="options">Options</string>
+    <string name="tests">Tests</string>
+    <string name="help">Help</string>
+
+    <!-- Take Picture Activity -->
+
+    <!-- Message Board Activity -->
+    <string name="msg_board_title">Message Board</string>
+    <string name="section_format">Hello World from section: %1$d</string>
+    <string name="messageHeader">Name at 01.01.70, 00:00</string>
+    <string name="messageContent">This is an example message.</string>
+    <string name="menu_refresh">Refresh</string>
+
+    <!-- Additional Information Activity -->
+    <string name="info_title">Addittional Information</string>
+
+    <!-- Help Activity -->
+    <string name="help_title">Help</string>
+    <string name="nomeInicio">To The Rescue</string>
+    <string name="msgInicio">Aqui poderá encontrar um guia das funcionalidades que a aplicação possuí.</string>
+    <string name="nomeMapa">Mapa</string>
+    <string name="msgMapa">Terá acesso à sua localização e à sua rota, bem como a localização de pontos de interesse no mapa.</string>
+    <string name="nomeEstado">Estado</string>
+    <string name="msgEstado">Através de sensores e da interação com o dispositivo é automaticamente atribuído um estado à vitima,
+        possibilitando a priorização do salvamento. </string>
+    <string name="nomeSOS">S.O.S</string>
+    <string name="msgSOS">Na barra lateral, ao clicar na opção S.O.S a chamada é imediatamente direcionada para as urgências.</string>
+    <string name="nomeMsgVoz">Enviar Mensagem de Voz</string>
+    <string name="msgMsgVoz">Ao clicar no icon do microfone no canto superior direito pode gravar uma mensagem de voz. Ao parar a
+        mensagem é gravada e enviada a um procurador.</string>
+    <string name="nomeFoto">Enviar Imagem</string>
+    <string name="msgFoto">Na barra lateral, na opçãp "Tirar Fotografia" é dada a possibilidade de enviar uma imagem personalizada.
+        Após tirar fotografia consegue adicionar texto e ao mesmo tempo gravar uma mensagem de voz (isto é feito automaticamente).
+        São ainda disponibilizadas várias cores para o texto, de modo a que o que for preciso assinalar seja precetível.
+        Depois só é necessário enviar e a mensagem é direcionada para um procurador.</string>
+
+    <!-- Options Activity -->
+    <string name="options_title">Options</string>
+
+    <!-- Tests Activity -->
+    <string name="priority">Priority</string>
+    <string name="color">Color</string>
+    <string name="screen_on">Screen On</string>
+    <string name="battery_level">Battery</string>
+    <string name="phone_movement">Movement last 5 minutes</string>
+    <string name="phone_light">Light</string>
+    <string name="phone_proximity">Proximity</string>
+    <string name="ambient_temp">Temperature</string>
+    <string name="step_counter">Steps</string>
+    <string name="red">RED</string>
+    <string name="black">BLACK</string>
+    <string name="yellow">YELLOW</string>
+    <string name="green">GREEN</string>
+    <string name="proximity_very_close">Very Close</string>
+    <string name="proximity_close">Close</string>
+    <string name="proximity_far">Far</string>
+    <string name="light_very_dark">Very dark</string>
+    <string name="light_dark">Dark</string>
+    <string name="light_normal">Normal</string>
+    <string name="light_bright">Bright</string>
+    <string name="light_very_bright">Very Bright</string>
+    <string name="error">Error</string>
+
+    <!-- Image Paint Activity -->
+    <string name="buttonRed">Red</string>
+    <string name="buttonBlue">Blue</string>
+    <string name="buttonBlack">Black</string>
+    <string name="buttonWhite">White</string>
+    <string name="buttonSend">Send</string>
+    <string name="buttonClean">Clean</string>
+
+    <!-- Alert Activity -->
     <string name="title_activity_alert">Alert</string>
 </resources>

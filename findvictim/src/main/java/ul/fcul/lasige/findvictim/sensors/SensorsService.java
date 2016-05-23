@@ -1,12 +1,13 @@
 package ul.fcul.lasige.findvictim.sensors;
 
+import android.app.Activity;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.database.Cursor;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
@@ -18,6 +19,13 @@ import android.util.Base64;
 import android.util.Log;
 
 import com.example.unzi.findalert.ui.RegisterInFind;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.PolylineOptions;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
 
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
@@ -33,14 +41,16 @@ import ul.fcul.lasige.find.lib.data.Packet;
 import ul.fcul.lasige.find.lib.data.PacketObserver;
 import ul.fcul.lasige.find.lib.service.FindConnector;
 import ul.fcul.lasige.findvictim.R;
+import ul.fcul.lasige.findvictim.app.PostMessage;
+import ul.fcul.lasige.findvictim.app.Route;
 import ul.fcul.lasige.findvictim.data.Message;
 import ul.fcul.lasige.findvictim.data.MessageGenerator;
 import ul.fcul.lasige.findvictim.data.TokenStore;
 import ul.fcul.lasige.findvictim.gcm.ReceiverGCM;
 import ul.fcul.lasige.findvictim.network.ConnectivityChangeReceiver;
+import ul.fcul.lasige.findvictim.ui.MainActivity;
 import ul.fcul.lasige.findvictim.utils.DeviceUtils;
 import ul.fcul.lasige.findvictim.utils.NetworkUtils;
-import ul.fcul.lasige.findvictim.utils.PositionUtils;
 import ul.fcul.lasige.findvictim.webservices.RequestServer;
 import ul.fcul.lasige.findvictim.webservices.WebLogging;
 
@@ -85,6 +95,8 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
     //boolean that allows the service to run even without alert.
     private boolean mManualStart = true;
 
+    private static Context mainContext;
+
     //gcm
     private ReceiverGCM mReceiverGCM;
 
@@ -100,7 +112,7 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
      */
     public static void startSensorsService(Context context) {
         Log.d(TAG, "ON START SENRSOR SERVICE");
-
+        mainContext = context;
         final Intent startIntent = new Intent(context, SensorsService.class);
         startIntent.setAction(ACTION_START);
         context.startService(startIntent);
@@ -111,8 +123,8 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
         return context.bindService(bindIntent, connection, Context.BIND_AUTO_CREATE);
     }
 
-    public static interface Callback {
-        public void onActivationStateChanged(boolean activated);
+    public interface Callback {
+        void onActivationStateChanged(boolean activated);
     }
 
     public void addCallback(Callback callback) {
@@ -162,8 +174,14 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
         // create sensor manager
         mSensorManager = new SensorManager();
         // add sensors
+        mSensorManager.addSensor(SensorManager.SensorType.Accelerometer, new AccelerometerSensor(getApplicationContext()), false);
         mSensorManager.addSensor(SensorManager.SensorType.Battery, new BatterySensor(getApplicationContext()), false);
-        mSensorManager.addSensor(SensorManager.SensorType.Location, new LocationSensor(getApplicationContext()), false);
+        mSensorManager.addSensor(SensorManager.SensorType.Location, new LocationSensor(mainContext), false);
+        mSensorManager.addSensor(SensorManager.SensorType.ScreenOn, new ScreenSensor(getApplicationContext()),false);
+        mSensorManager.addSensor(SensorManager.SensorType.Proximity, new ProximitySensor(getApplicationContext()),false);
+        mSensorManager.addSensor(SensorManager.SensorType.Light, new LightSensor(getApplicationContext()),false);
+        mSensorManager.addSensor(SensorManager.SensorType.StepCounter, new StepCounterSensor(getApplicationContext()),false);
+        //mSensorManager.addSensor(SensorManager.SensorType.Time, new TimeSensor(mainContext), false);
 
         mUploadBroadcastReceiver = new BroadcastReceiver() {
             @Override
@@ -359,7 +377,7 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
     public void sendMessage(Message message) {
 
         Log.d(TAG, "Sending message ...");
-        Log.d(TAG, "Battery level: " + message.Battery);
+        Log.d(TAG, "Battery level: " + message.BatteryLevel);
         Log.d(TAG, "Location Lat: " + message.LocationLatitude + " Lon: " + message.LocationLongitude + " Acc: " + message.LocationAccuracy + " Time: " + message.LocationTimestamp);
 
         // if it is the first time we have location
@@ -535,18 +553,97 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
     @Override
     public void onPacketReceived(Packet packet, Uri ui) {
 
-        String downloadProtocol = mConnector.getProtocolToken("ul.fcul.lasige.downloading");
+        String routesProtocol = mConnector.getProtocolToken("ul.fcul.lasige.routes");
         String victimProtocol = mConnector.getProtocolToken("ul.fcul.lasige.findvictim");
 
-        if (downloadProtocol.equals(ui.getQueryParameters("protocol_token").get(0))) {
+        if (routesProtocol.equals(ui.getQueryParameters("protocol_token").get(0))) {
             //do something with packet
-            String data = new String(packet.getData());
-            Log.d(TAG, "Packet downloaded:::" + data);
+            final String data = new String(packet.getData());
+            Log.d(TAG, "Packet routes:::" + data);
+            ((Activity) mainContext).runOnUiThread(new Runnable() {
+                @Override
+                public void run() {
+                    GoogleMap googleMap = MainActivity.getGoogleMaps();
+                    try {
+                        JSONArray json = new JSONArray(data);
+                        Log.d(TAG, "JSON SIZE " + json.length());
+
+                        for (int i = 0 ; i < json.length() ; i++) {
+                            JSONObject o = json.getJSONObject(i);
+                            googleMap.addPolyline(new PolylineOptions()
+                                    .add(new LatLng(o.getDouble("start_lat"), o.getDouble("start_lng")), new LatLng(o.getDouble("end_lat"), o.getDouble("end_lng")))
+                                    .width(7)
+                                    .color(Color.BLUE))
+                                    .setZIndex(100);
+                            /*Route r = new Route();
+                            r.start_lat = o.getDouble("start_lat");
+                            r.end_lat = o.getDouble("end_lat");
+                            r.start_lng = o.getDouble("start_lng");
+                            r.end_lng = o.getDouble("end_lng");
+                            long currentTime = System.currentTimeMillis() / 1000L;
+                            r.timeReceived = currentTime;
+                            r.timeSent = currentTime;
+
+                            Route.Store.addRoute(MainActivity.getDB(), r);*/
+                        }
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
         } else {
             if (victimProtocol.equals(ui.getQueryParameters("protocol_token").get(0))) {
                 //do something with packet
                 String data = new String(packet.getData());
                 Log.d(TAG, "Packet victim:::" + data);
+                try {
+                    JSONObject json = new JSONObject(data);
+                    if (!json.get("textMessage").equals("")) {
+                        PostMessage newMsg = new PostMessage();
+                        if (json.get("isVictim").equals("1")) {
+                            newMsg.sender = "Victim";
+                            newMsg.sender_type = "Victim";
+                        }
+                        else {
+                            newMsg.sender = "Rescuer";
+                            newMsg.sender_type = "Rescuer";
+                        }
+                        newMsg.content = (String) json.get("textMessage");
+
+                        long currentTime = System.currentTimeMillis() / 1000L;
+                        newMsg.timeSent = (long) json.get("timestamp");
+                        newMsg.timeReceived = currentTime;
+
+                        PostMessage.Store.addMessage(MainActivity.getDB(), newMsg);
+                    }
+                    /*
+                    if (json.get("routes") != null) {
+                        JSONArray array = json.getJSONArray("routes");
+                        Log.d(TAG, "JSON SIZE " + array.length());
+                        GoogleMap googleMap = MainActivity.getGoogleMaps();
+                        for (int i = 0 ; i < array.length() ; i++) {
+                            JSONObject o = array.getJSONObject(i);
+                            googleMap.addPolyline(new PolylineOptions()
+                                    .add(new LatLng(o.getDouble("start_lat"), o.getDouble("start_lng")), new LatLng(o.getDouble("end_lat"), o.getDouble("end_lng")))
+                                    .width(7)
+                                    .color(Color.BLUE))
+                                    .setZIndex(100);
+                            Route r = new Route();
+                            r.start_lat = o.getDouble("start_lat");
+                            r.end_lat = o.getDouble("end_lat");
+                            r.start_lng = o.getDouble("start_lng");
+                            r.end_lng = o.getDouble("end_lng");
+                            long currentTime = System.currentTimeMillis() / 1000L;
+                            r.timeReceived = currentTime;
+                            r.timeSent = currentTime;
+
+                            Route.Store.addRoute(MainActivity.getDB(), r);
+                        }
+                    }*/
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
             }
         }
     }

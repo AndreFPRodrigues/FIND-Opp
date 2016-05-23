@@ -8,9 +8,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.location.Location;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Vibrator;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
@@ -96,13 +100,21 @@ public class GcmScheduler {
         Intent resultIntent = new Intent(context, AlertActivity.class);
         resultIntent.putExtra("Alert", alert);
 
+        Vibrator v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+        v.vibrate(1000);
+
+        Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        Ringtone r = RingtoneManager.getRingtone(context, notification);
+        r.play();
+
         NotificationCompat.Builder mBuilder =null;
         switch (danger){
             case IN_LOCATION:
                 mBuilder = new NotificationCompat.Builder(context)
                         .setSmallIcon(R.drawable.warning_notification)
                         .setContentTitle(alert.getName()+" at " +alert.getDate().getHours() + ":" +alert.getDate().getMinutes()  )
-                        .setContentText(alert.getDescription());
+                        .setContentText(alert.getDescription())
+                        .setAutoCancel(true);
                 if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     mBuilder.setColor(Color.RED);
                 }
@@ -113,7 +125,9 @@ public class GcmScheduler {
                 mBuilder = new NotificationCompat.Builder(context)
                         .setSmallIcon(R.drawable.warning_notification_y)
                         .setContentTitle(alert.getName()+" at " +alert.getDate().getHours() + ":" +alert.getDate().getMinutes()  )
-                        .setContentText(alert.getDescription()).setOngoing(true);
+                        .setContentText(alert.getDescription())
+                        .setOngoing(true)
+                        .setAutoCancel(true);
                 if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     mBuilder.setColor(Color.YELLOW);
                 }
@@ -123,7 +137,8 @@ public class GcmScheduler {
                 mBuilder = new NotificationCompat.Builder(context)
                         .setSmallIcon(R.drawable.warning_notification_g)
                         .setContentTitle(alert.getName()+" at " +alert.getDate().getHours() + ":" +alert.getDate().getMinutes()  )
-                        .setContentText(alert.getDescription());
+                        .setContentText(alert.getDescription())
+                        .setAutoCancel(true);
                 if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     mBuilder.setColor(Color.GREEN);
                 }

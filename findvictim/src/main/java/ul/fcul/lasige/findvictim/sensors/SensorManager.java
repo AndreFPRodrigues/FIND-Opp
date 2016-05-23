@@ -21,26 +21,51 @@ public class SensorManager {
 	 * Set of keys to be used to access mSensors
 	 */
 	public enum SensorType {
-		
+
+		/**
+		 * Detects if the cellphone is moving
+		 */
+		Accelerometer,
+
 		/**
 		 * Battery level sensor
 		 */
 		Battery,
-		
+
+		/**
+		 * Proximity to cellphone
+		 */
+		Proximity,
+
+		/**
+		 * Light in the enviroment
+		 */
+		Light,
+
+		/**
+		 * User step counter
+		 */
+		StepCounter,
+
 		/**
 		 * Victim steps/movement sensor
 		 */
 		MicroMovements,
-		
+
 		/**
 		 * User-screen interaction
 		 */
 		ScreenOn,
-		
+
 		/**
 		 * Geographical location sensor
 		 */
-		Location
+		Location,
+
+		/**
+		 * Check the time
+		 */
+		Time
 	}
 	
 	/**

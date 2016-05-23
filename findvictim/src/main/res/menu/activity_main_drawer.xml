@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item android:title="@string/communication">
+        <menu>
+            <item
+                android:id="@+id/toggleButton"
+                android:icon="@android:drawable/star_off"
+                android:title="@string/start" />
+
+        </menu>
+    </item>
+
+    <item android:title="@string/functions">
+        <menu>
+            <item
+                android:id="@+id/nav_sos"
+                android:icon="@android:drawable/ic_dialog_alert"
+                android:title="@string/sos" />
+
+            <item
+                android:id="@+id/nav_take_picture"
+                android:icon="@android:drawable/ic_menu_camera"
+                android:title="@string/picture" />
+
+            <item
+                android:id="@+id/nav_send_msg"
+                android:icon="@android:drawable/ic_menu_send"
+                android:title="@string/send_msg" />
+
+            <item
+                android:id="@+id/nav_msg_board"
+                android:icon="@android:drawable/ic_dialog_email"
+                android:title="@string/msg_board" />
+
+            <item
+                android:id="@+id/nav_info"
+                android:icon="@android:drawable/ic_menu_add"
+                android:title="@string/info" />
+
+        </menu>
+    </item>
+
+    <item android:title="@string/other">
+        <menu>
+            <item
+                android:id="@+id/nav_help"
+                android:icon="@android:drawable/ic_menu_help"
+                android:title="@string/help" />
+
+            <item
+                android:id="@+id/nav_options"
+                android:icon="@android:drawable/ic_menu_manage"
+                android:title="@string/options" />
+
+            <item
+                android:id="@+id/nav_tests"
+                android:icon="@android:drawable/ic_menu_view"
+                android:title="@string/tests" />
+        </menu>
+    </item>
+</menu>

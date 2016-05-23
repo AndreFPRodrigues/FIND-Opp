@@ -17,7 +17,7 @@
         android:name="ul.fcul.lasige.find.service.FindApp"
         android:allowBackup="true"
         android:label="@string/app_name"
-        android:icon="@mipmap/ic_launcher"
+        android:icon="@drawable/icon_network"
         android:theme="@style/AppTheme">
 
         <!-- ACTIVITIES -->

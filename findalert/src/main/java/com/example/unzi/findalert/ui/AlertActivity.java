@@ -1,12 +1,17 @@
 package com.example.unzi.findalert.ui;
 
+import android.app.AlertDialog;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.DialogInterface;
+import android.content.Intent;
 import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.TextView;
 
 import com.example.unzi.findalert.R;
@@ -32,6 +37,9 @@ public class AlertActivity extends FragmentActivity  {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_alert);
+
+        // set layout to fullscreen
+        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
 
         // Obtain the SupportMapFragment and get notified when the map is ready to be used.
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
@@ -62,13 +70,38 @@ public class AlertActivity extends FragmentActivity  {
             RegisterInFind.sharedInstance(this).receivedAlert(mAlert, mIsInside);
         }
 
+        Button b = (Button) findViewById(R.id.button);
+        b.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                outsideAlert(v);
+                finish();
+            }
+        });
 
-
+        Button b2 = (Button) findViewById(R.id.button2);
+        b2.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                new AlertDialog.Builder(AlertActivity.this)
+                        .setTitle("Alert")
+                        .setMessage("Please enable your location service (GPS)")
+                        .setPositiveButton("Enable", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                Intent gpsOptionsIntent = new Intent(
+                                        android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS);
+                                startActivity(gpsOptionsIntent);
+                            }
+                        }).setCancelable(false).show();
+                insideAlert(v);
+            }
+        });
     }
 
     //get our tile database provider
     private void startTileProvider(GoogleMap googleMap) {
-        String path =getFilesDir()+ "/mapapp/world.sqlitedb";
+        String path = getFilesDir()+ "/mapapp/world.sqlitedb";
         TilesProvider tilesProvider = new TilesProvider(mMap, path);
     }
 
@@ -83,7 +116,6 @@ public class AlertActivity extends FragmentActivity  {
         findViewById(R.id.alertDetails).setVisibility(View.VISIBLE);
         cancelNotification();
         RegisterInFind.sharedInstance(this).receivedAlert(mAlert, false);
-
     }
 
     public void insideAlert(View v){

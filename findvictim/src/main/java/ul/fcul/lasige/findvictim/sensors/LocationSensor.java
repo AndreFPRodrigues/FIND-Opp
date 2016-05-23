@@ -1,11 +1,7 @@
 package ul.fcul.lasige.findvictim.sensors;
 
-import android.Manifest;
-import android.app.AlertDialog;
+import android.app.Activity;
 import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
-import android.content.pm.PackageManager;
 import android.location.Criteria;
 import android.location.Location;
 import android.location.LocationListener;
@@ -13,15 +9,19 @@ import android.location.LocationManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.net.wifi.WifiManager;
-import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
-import android.provider.Settings;
-import android.support.v4.app.ActivityCompat;
-import android.support.v4.content.ContextCompat;
 import android.util.Log;
 
+import com.google.android.gms.maps.CameraUpdateFactory;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
+import com.google.android.gms.maps.model.MarkerOptions;
+
 import java.lang.reflect.Method;
+
+import ul.fcul.lasige.findvictim.ui.MainActivity;
 
 /**
  * Updates geographical location positioning data. It uses
@@ -49,6 +49,8 @@ public class LocationSensor extends AbstractSensor {
     private LocationManager mLocManager;
     private Handler handler;
 
+    private Marker marker;
+
     private Location currentBestLocation;
 
     private LocationListener locationListener = new LocationListener() {
@@ -69,7 +71,7 @@ public class LocationSensor extends AbstractSensor {
         }
 
         @Override
-        public void onLocationChanged(Location location) {
+        public void onLocationChanged(final Location location) {
 
             if (isBetterLocation(location, currentBestLocation)) {
                 currentBestLocation = location;
@@ -80,6 +82,19 @@ public class LocationSensor extends AbstractSensor {
 
                 Log.i(TAG, "Latitude is " + location.getLatitude()
                         + ". Longitude is " + location.getLongitude());
+
+                ((Activity) context).runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
+                        GoogleMap gm = MainActivity.getGoogleMaps();
+                        gm.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 18.0f));
+                        if (marker != null)
+                            marker.remove();
+                        marker = gm.addMarker(new MarkerOptions()
+                                .position(new LatLng(location.getLatitude(), location.getLongitude()))
+                                .title("You"));
+                    }
+                });
 
                 if (currentInterval == INITIAL_INTERVAL) {
                     // first location found. Set less frequent updates

@@ -1,15 +1,9 @@
 package ul.fcul.lasige.findvictim.app;
 
-import android.app.AlertDialog;
 import android.app.Application;
 import android.content.ComponentName;
-import android.content.Context;
-import android.content.DialogInterface;
-import android.content.Intent;
 import android.content.ServiceConnection;
-import android.location.LocationManager;
 import android.os.IBinder;
-import android.provider.Settings;
 import android.util.Log;
 
 import ul.fcul.lasige.findvictim.sensors.SensorsService;
@@ -20,8 +14,6 @@ import ul.fcul.lasige.findvictim.sensors.SensorsService;
 public class VictimApp extends Application {
     private static final String TAG = VictimApp.class.getSimpleName();
 
-    // sensor service
-    private ServiceConnection mSensorsConnection;
     private SensorsService mSensors = null;
 
     @Override
@@ -29,7 +21,7 @@ public class VictimApp extends Application {
         Log.d(TAG, "Victim APP: CREATED");
 
         // bind to sensors service
-        mSensorsConnection = new ServiceConnection() {
+        ServiceConnection mSensorsConnection = new ServiceConnection() {
             @Override
             public void onServiceDisconnected(ComponentName name) {
                 mSensors = null;

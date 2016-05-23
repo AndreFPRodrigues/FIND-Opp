@@ -21,7 +21,9 @@
         android:supportsRtl="true">
         <activity
             android:name=".ui.AlertActivity"
-            android:label="@string/title_activity_alert" />
+            android:launchMode="singleTop"
+            android:label="@string/title_activity_alert">
+        </activity>
 
         <!-- RECEIVER -->
         <receiver

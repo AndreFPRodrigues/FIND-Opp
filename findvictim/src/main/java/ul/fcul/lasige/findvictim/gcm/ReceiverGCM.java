@@ -19,7 +19,7 @@ public class ReceiverGCM implements OnAlert, OnRegisterComplete {
         RegisterInFind registerInFind = RegisterInFind.sharedInstance(context);
         registerInFind.observeOnAlert(this);
         registerInFind.observeOnRegisterComplete(this);
-        mContext=context;
+        mContext = context;
     }
 
     @Override

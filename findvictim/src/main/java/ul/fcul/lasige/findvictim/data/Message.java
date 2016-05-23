@@ -3,6 +3,7 @@ package ul.fcul.lasige.findvictim.data;
 import android.content.Context;
 import android.util.Log;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -15,6 +16,7 @@ import java.io.ObjectOutputStream;
 import java.io.Serializable;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
+import java.util.Arrays;
 import java.util.Locale;
 
 /**
@@ -35,13 +37,35 @@ public class Message implements Serializable{
     public long TimeReceived;
     // hash is used to identify replicated messages
     private String mHash;
+    // movement
+    public int Movement;
     // battery
-    public int Battery;
+    public int BatteryLevel;
+    public int BatteryTemp;
     // location
     public double LocationLatitude = Double.NaN;
     public double LocationLongitude = Double.NaN;
     public float LocationAccuracy = Float.NaN;
     public long LocationTimestamp = -1;
+    // screenOn
+    public int ScreenOn;
+    // proximity
+    public int Proximity;
+    // light
+    public int Light;
+    // stepCounter
+    public int StepCounter;
+    // voice message
+    public byte[] VoiceMessage;
+    // draw image
+    public byte[] DrawImage;
+    // voice message associated with th draw image
+    public byte[] DrawImageVoiceMessage;
+    // last posted text message
+    public String TextMessage;
+
+    public JSONArray Routes;
+    public long RouteTime;
 
     // hash is used as an unique identifier of the message (sender, content, timesent)
     public String getHash() {
@@ -113,11 +137,21 @@ public class Message implements Serializable{
             json.put("longitude", LocationLongitude);
             json.put("accuracy", LocationAccuracy);
             json.put("locationTimestamp", LocationTimestamp);
-            json.put("battery", Battery);
-            json.put("steps", 0); // TODO
-            json.put("screen", 0); // TODO
+            json.put("movement", Movement);
+            json.put("batteryLevel", BatteryLevel);
+            json.put("batteryTemp", BatteryTemp);
+            json.put("screenOn", ScreenOn);
+            json.put("proximity", Proximity);
+            json.put("light", Light);
+            json.put("steps", StepCounter);
+            json.put("voiceMessage", Arrays.toString(VoiceMessage));
+            json.put("drawImage", Arrays.toString(DrawImage));
+            json.put("drawImageVoiceMessage", Arrays.toString(DrawImageVoiceMessage));
             json.put("safe", 0); // TODO
-            json.put("msg", ""); // TODO
+            json.put("textMessage", TextMessage);
+            json.put("routes", Routes.toString());
+            json.put("routeTime", RouteTime);
+            json.put("isVictim", "1");
             /*json.put("status", ""); // deprecated
             json.put("statusTimestamp", 0); // deprecated
             json.put("origin", message.OriginMac);
