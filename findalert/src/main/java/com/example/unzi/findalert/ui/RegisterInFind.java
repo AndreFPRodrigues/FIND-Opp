@@ -36,9 +36,11 @@ public class RegisterInFind {
 
     public void register(){
         boolean sentToken = TokenStore.isRegistered(mContext);
-        if(!sentToken) {
+        boolean offlineMaps = TokenStore.hasOfflineMap(mContext);
+
+        if(!sentToken||!offlineMaps) {
             Intent myIntent = new Intent(mContext,MainActivity.class);
-            myIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            myIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
             mContext.startActivity(myIntent);
         }
     }

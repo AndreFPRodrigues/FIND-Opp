@@ -97,11 +97,16 @@ public class GcmScheduler {
         resultIntent.putExtra("Alert", alert);
 
         NotificationCompat.Builder mBuilder =null;
+        String hour = "0"+alert.getDate().getHours();
+        hour = hour.length()>2 ?hour.substring(1):hour;
+        String minutes = "0"+alert.getDate().getMinutes();
+        minutes = minutes.length()>2 ?minutes.substring(1):minutes;
+        String title = alert.getName()+" at " +hour+ ":" +minutes;
         switch (danger){
             case IN_LOCATION:
                 mBuilder = new NotificationCompat.Builder(context)
                         .setSmallIcon(R.drawable.warning_notification)
-                        .setContentTitle(alert.getName()+" at " +alert.getDate().getHours() + ":" +alert.getDate().getMinutes()  )
+                        .setContentTitle(title   )
                         .setContentText(alert.getDescription());
                 if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     mBuilder.setColor(Color.RED);
@@ -112,7 +117,7 @@ public class GcmScheduler {
             case UNKNOWN:
                 mBuilder = new NotificationCompat.Builder(context)
                         .setSmallIcon(R.drawable.warning_notification_y)
-                        .setContentTitle(alert.getName()+" at " +alert.getDate().getHours() + ":" +alert.getDate().getMinutes()  )
+                        .setContentTitle(title  )
                         .setContentText(alert.getDescription()).setOngoing(true);
                 if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     mBuilder.setColor(Color.YELLOW);
@@ -122,7 +127,7 @@ public class GcmScheduler {
             case NOT_IN_LOCATION:
                 mBuilder = new NotificationCompat.Builder(context)
                         .setSmallIcon(R.drawable.warning_notification_g)
-                        .setContentTitle(alert.getName()+" at " +alert.getDate().getHours() + ":" +alert.getDate().getMinutes()  )
+                        .setContentTitle(title)
                         .setContentText(alert.getDescription());
                 if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     mBuilder.setColor(Color.GREEN);
@@ -177,8 +182,6 @@ public class GcmScheduler {
             // stop sensors service
             //TODO create onStop
             RegisterInFind.sharedInstance(context).stopAlert(alertID);
-           /* VictimApp app = (VictimApp) context.getApplicationContext();
-            app.stopSensors();*/
         }
     }
 
@@ -254,10 +257,7 @@ public class GcmScheduler {
                             alertID, Alert.STATUS.ONGOING);
 
                     // start sensors service
-                   //TODO ON RECEIVE ALERT START
                     RegisterInFind.sharedInstance(context).startAlert(alertID);
-                   /* VictimApp app = (VictimApp) context.getApplicationContext();
-                    app.starSensors();*/
 
                 } else if (action != null && action.equalsIgnoreCase((ACTION_SCHEDULE_STOP))) {
                     Log.d(TAG, "Received alarm to stop sensors");
@@ -267,11 +267,8 @@ public class GcmScheduler {
                             alertID, Alert.STATUS.STOPPED);
 
                     // stop sensors service
-                    //TODO ONRECEIVE ALERT STOP
                     RegisterInFind.sharedInstance(context).stopAlert(alertID);
 
-                   /* VictimApp app = (VictimApp) context.getApplicationContext();
-                    app.stopSensors();*/
                 }
             }
         }

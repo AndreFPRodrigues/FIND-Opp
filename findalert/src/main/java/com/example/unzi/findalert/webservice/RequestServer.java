@@ -46,8 +46,6 @@ public class RequestServer {
                     // get endpoint for country
                     getEndPoint(country, context, locale, mac, email, token);
 
-                    //get offline tile database
-                    getTileDatabase(context);
 
                 } catch (JSONException e) {
                     e.printStackTrace();
@@ -61,15 +59,6 @@ public class RequestServer {
                 registerOnServer(context, null, locale, mac, email, token, "");
             }
         });
-    }
-
-    private static void getTileDatabase(Context context) {
-        Log.d(TAG, "dbLocation:"+context.getFilesDir()+"/mapapp/world.sqlitedb");
-        File bd = new File(context.getFilesDir()+"/mapapp/world.sqlitedb");
-        DownloadFile d;
-        if (!bd.exists()) {
-            d = new DownloadFile(context);
-        }
     }
 
     private static void getEndPoint(String country, final Context context, final String locale, final String mac, final String email, final String token) {

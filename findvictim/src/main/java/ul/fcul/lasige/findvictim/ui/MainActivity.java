@@ -3,6 +3,7 @@ package ul.fcul.lasige.findvictim.ui;
 import android.content.ComponentName;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.os.IBinder;
 import android.support.v7.app.AppCompatActivity;
@@ -12,8 +13,13 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
+
+import com.example.unzi.findalert.data.Alert;
+import com.example.unzi.findalert.ui.RegisterInFind;
 
 import ul.fcul.lasige.findvictim.R;
+import ul.fcul.lasige.findvictim.gcm.ReceiverGCM;
 import ul.fcul.lasige.findvictim.sensors.SensorsService;
 
 public class MainActivity extends AppCompatActivity implements SensorsService.Callback {
@@ -35,7 +41,6 @@ public class MainActivity extends AppCompatActivity implements SensorsService.Ca
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
-
         mToggleButton = (Button) findViewById(R.id.toggleButton);
         mDescriptionView = (TextView) findViewById(R.id.descriptionView);
 
@@ -55,7 +60,6 @@ public class MainActivity extends AppCompatActivity implements SensorsService.Ca
                 }
             }
         });
-
 
         // start sensor service
         SensorsService.startSensorsService(this);
@@ -87,8 +91,10 @@ public class MainActivity extends AppCompatActivity implements SensorsService.Ca
 
     @Override
     protected void onResume() {
+        //Make sure we have registered the app and downloaded the map
+        RegisterInFind findRegister = RegisterInFind.sharedInstance(this);
+        findRegister.register();
         super.onResume();
-
     }
 
     @Override
@@ -153,7 +159,4 @@ public class MainActivity extends AppCompatActivity implements SensorsService.Ca
             }
         });
     }
-
-
-
 }

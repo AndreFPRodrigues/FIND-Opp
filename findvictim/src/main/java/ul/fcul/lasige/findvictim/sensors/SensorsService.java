@@ -436,7 +436,7 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
         /**
          * The service is up and running, but doing nothing yet. From here, an activation
          * request is needed to transition further to the {@link SensorsState#RUNNING} state.
-         * <p/>
+         * <p>
          * This state is also transitioned to in case of a deactivation request.
          */
         IDLE {
@@ -451,7 +451,7 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
         /**
          * The service is enabled and starts collecting sensor data. From here, a deactivation
          * request is needed to transition further to the {@link SensorsState#IDLE} state.
-         * <p/>
+         * <p>
          * When in this state, the supervisor holds a partial wake lock.
          *
          * @see PowerManager.WakeLock
@@ -535,20 +535,20 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
     @Override
     public void onPacketReceived(Packet packet, Uri ui) {
 
-        String downloadProtocol = mConnector.getProtocolToken("ul.fcul.lasige.downloading");
+        //String downloadProtocol = mConnector.getProtocolToken("ul.fcul.lasige.downloading");
         String victimProtocol = mConnector.getProtocolToken("ul.fcul.lasige.findvictim");
 
-        if (downloadProtocol.equals(ui.getQueryParameters("protocol_token").get(0))) {
+       /* if (downloadProtocol.equals(ui.getQueryParameters("protocol_token").get(0))) {
             //do something with packet
             String data = new String(packet.getData());
             Log.d(TAG, "Packet downloaded:::" + data);
-        } else {
-            if (victimProtocol.equals(ui.getQueryParameters("protocol_token").get(0))) {
-                //do something with packet
-                String data = new String(packet.getData());
-                Log.d(TAG, "Packet victim:::" + data);
-            }
+        } else {*/
+        if (victimProtocol.equals(ui.getQueryParameters("protocol_token").get(0))) {
+            //do something with packet
+            String data = new String(packet.getData());
+            Log.d(TAG, "Packet victim:::" + data);
         }
+        // }
     }
 
    /* @Override
