@@ -1,6 +1,5 @@
 package ul.fcul.lasige.findvictim.ui;
 
-import android.Manifest;
 import android.app.AlertDialog;
 import android.content.BroadcastReceiver;
 import android.content.ComponentName;
@@ -8,8 +7,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.ServiceConnection;
-import android.content.pm.PackageManager;
+import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
+import android.graphics.PorterDuff;
 import android.location.Location;
 import android.location.LocationListener;
 import android.media.AudioManager;
@@ -24,7 +25,6 @@ import android.provider.MediaStore;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
 import android.support.design.widget.NavigationView;
-import android.support.v4.app.ActivityCompat;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.ActionBarDrawerToggle;
@@ -37,9 +37,14 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
 import android.widget.EditText;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
+import com.example.unzi.findalert.data.Alert;
+import com.example.unzi.findalert.ui.AlertActivity;
 import com.example.unzi.offlinemaps.TilesProvider;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -92,7 +97,13 @@ public class MainActivity extends AppCompatActivity implements
     private static SQLiteDatabase mDb;
     // voice commands
     private TextToSpeech tts;
-    // <!-- http://accessible-serv.lasige.di.fc.ul.pt/~lost/astarteWebapp/index.php/routes/allSections -->
+    // main activity menu
+    private Menu menu;
+    // detecta se a plataforma foi desligada manualmente
+    private boolean manuallyStop, manuallyStart;
+    // alertt
+    private boolean ongoingAlert = false;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -112,6 +123,8 @@ public class MainActivity extends AppCompatActivity implements
         initMaps();
         // start database
         initDB();
+        // check for alerts
+        checkAlert();
     }
 
     @Override
@@ -160,22 +173,26 @@ public class MainActivity extends AppCompatActivity implements
      */
     @Override
     public void onBackPressed() {
-        AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
-        b.setTitle("Exit Application");
-        b.setMessage("If you really want to exit the application, please avoid spending unnecessary battery. Exit anyway?");
-        b.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
-                MainActivity.super.onBackPressed();
-            }
-        });
-        b.setNegativeButton("No", new DialogInterface.OnClickListener() {
-            @Override
-            public void onClick(DialogInterface dialog, int which) {
+        if (ongoingAlert) {
+            AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
+            b.setTitle("Exit Application");
+            b.setMessage("If you really want to exit the application, please avoid spending unnecessary battery. Exit anyway?");
+            b.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
+                    MainActivity.super.onBackPressed();
+                }
+            });
+            b.setNegativeButton("No", new DialogInterface.OnClickListener() {
+                @Override
+                public void onClick(DialogInterface dialog, int which) {
 
-            }
-        });
-        b.show();
+                }
+            });
+            b.show();
+        }
+        else
+            super.onBackPressed();
     }
 
     @Override
@@ -379,6 +396,17 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.victim, menu);
+        this.menu = menu;
+        Cursor cursor = Alert.Store.fetchAlerts(
+                com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
+                Alert.STATUS.ONGOING);
+
+        if (!cursor.moveToFirst()) {
+            cursor.close();
+        }
+        else {
+            menu.findItem(R.id.platform_status).setIcon(R.drawable.green_circle);
+        }
         return true;
     }
 
@@ -516,20 +544,28 @@ public class MainActivity extends AppCompatActivity implements
             if(mSensors != null) {
                 if(mSensors.isActivated()) {
                     // turn off
+                    MenuItem status = menu.findItem(R.id.platform_status);
+                    status.setIcon(R.drawable.red_circle);
                     item.setTitle("Start");
+                    item.setIcon(R.drawable.red_circle);
                     mSensors.deactivateSensors();
+                    manuallyStop = true;
+                    Toast.makeText(getApplicationContext(), "Stopped", Toast.LENGTH_SHORT).show();
                 }
                 else {
+                    MenuItem status = menu.findItem(R.id.platform_status);
+                    status.setIcon(R.drawable.green_circle);
                     item.setTitle("Stop");
+                    item.setIcon(R.drawable.green_circle);
                     mSensors.activateSensors(true);
+                    Toast.makeText(getApplicationContext(), "Started", Toast.LENGTH_SHORT).show();
                 }
             }
-            Toast.makeText(getApplicationContext(), "Started", Toast.LENGTH_SHORT).show();
-        } else if (id == R.id.nav_sos) {
+        /*} else if (id == R.id.nav_sos) {
             Intent sos = new Intent(Intent.ACTION_CALL, Uri.parse(Constants.CALL_112));
             if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
                 startActivity(sos);
-            }
+            }*/
         } else if (id == R.id.nav_take_picture) {
             try {
                 Intent camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
@@ -582,7 +618,7 @@ public class MainActivity extends AppCompatActivity implements
         } else if (id == R.id.nav_msg_board) {
             Intent board = new Intent(this, MessageBoardActivity.class);
             startActivity(board);
-        } else if (id == R.id.nav_info) {
+        } /*else if (id == R.id.nav_info) {
             Intent info = new Intent(this, AdditionalInformationActivity.class);
             startActivity(info);
         } else if (id == R.id.nav_help) {
@@ -594,7 +630,7 @@ public class MainActivity extends AppCompatActivity implements
         } else if (id == R.id.nav_tests) {
             Intent tests = new Intent(this, TestsActivity.class);
             startActivity(tests);
-        }
+        }*/
 
         DrawerLayout drawer = (DrawerLayout) findViewById(R.id.drawer_Layout);
         assert drawer != null;
@@ -662,6 +698,8 @@ public class MainActivity extends AppCompatActivity implements
                 Log.d(TAG, "Images folder created successfully");
     }
 
+    NavigationView navigationView;
+
     private DrawerLayout setNavigationDrawer () {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -671,9 +709,15 @@ public class MainActivity extends AppCompatActivity implements
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         toggle.syncState();
 
-        NavigationView navigationView = (NavigationView) findViewById(R.id.nav_view);
+        navigationView = (NavigationView) findViewById(R.id.nav_view);
         assert navigationView != null;
         navigationView.setNavigationItemSelectedListener(this);
+        navigationView.setItemIconTintList(null);
+        //navigationView.setItemTextColor(ColorStateList.valueOf(Color.WHITE));
+        //navigationView.setBackgroundColor(Color.BLACK);
+        navigationView.getMenu().findItem(R.id.nav_take_picture).getIcon().setColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN);
+        navigationView.getMenu().findItem(R.id.nav_send_msg).getIcon().setColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN);
+        navigationView.getMenu().findItem(R.id.nav_msg_board).getIcon().setColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN);
 
         return drawer;
     }
@@ -692,15 +736,13 @@ public class MainActivity extends AppCompatActivity implements
         marker = false;
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.victimMap);
-        //mapFragment.getMapAsync(this);
         googleMap = mapFragment.getMap();
-        startTileProvider(googleMap);
-    }
-
-    //get our tile database provider
-    private void startTileProvider(GoogleMap googleMap) {
         String path = getFilesDir()+ "/mapapp/world.sqlitedb";
-        TilesProvider tilesProvider = new TilesProvider(googleMap, path);
+        if (new File(path).exists()) {
+           new TilesProvider(googleMap, path);
+        }
+        else
+            mapFragment.getMapAsync(this);
     }
 
     /**
@@ -713,6 +755,51 @@ public class MainActivity extends AppCompatActivity implements
 
     public static SQLiteDatabase getDB () {
         return mDb;
+    }
+
+    private void checkAlert () {
+        Cursor cursor = Alert.Store.fetchAlerts(
+                com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
+                Alert.STATUS.ONGOING);
+
+        if (!cursor.moveToFirst()) {
+            cursor.close();
+            if (ongoingAlert) {
+                MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
+                mi.setIcon(R.drawable.red_circle);
+                mi.setTitle("Start");
+                View header = navigationView.getHeaderView(0);
+                ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
+                assert iv != null;
+                iv.setImageResource(R.drawable.alert_ok);
+                TextView tv = (TextView) header.findViewById(R.id.alert_name);
+                tv.setText("No alerts at the moment");
+                Button b = (Button) header.findViewById(R.id.see_alert);
+                b.setVisibility(View.GONE);
+            }
+        }
+        else {
+            if (!manuallyStop) {
+                Alert a = Alert.fromCursor(cursor);
+                MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
+                mi.setIcon(R.drawable.green_circle);
+                mi.setTitle("Stop");
+                View header = navigationView.getHeaderView(0);
+                ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
+                assert iv != null;
+                iv.setImageResource(R.drawable.danger_alert);
+                TextView tv = (TextView) header.findViewById(R.id.alert_name);
+                tv.setText(a.getName());
+                Button b = (Button) header.findViewById(R.id.see_alert);
+                b.setVisibility(View.VISIBLE);
+                b.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        startActivity(new Intent(MainActivity.this, AlertActivity.class));
+                    }
+                });
+            }
+        }
     }
 }
 

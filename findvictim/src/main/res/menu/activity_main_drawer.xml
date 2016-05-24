@@ -1,11 +1,35 @@
 <?xml version="1.0" encoding="utf-8"?>
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
 
-    <item android:title="@string/communication">
+    <group android:id="@+id/grp1">
+        <item
+            android:id="@+id/toggleButton"
+            android:icon="@drawable/red_circle"
+            android:title="@string/start" />
+    </group>
+
+    <group android:id="@+id/grp2">
+        <item
+            android:id="@+id/nav_take_picture"
+            android:icon="@android:drawable/ic_menu_camera"
+            android:title="@string/picture" />
+
+        <item
+            android:id="@+id/nav_send_msg"
+            android:icon="@android:drawable/ic_menu_send"
+            android:title="@string/send_msg" />
+
+        <item
+            android:id="@+id/nav_msg_board"
+            android:icon="@android:drawable/ic_dialog_email"
+            android:title="@string/msg_board" />
+    </group>
+
+    <!--<item android:title="@string/communication">
         <menu>
             <item
                 android:id="@+id/toggleButton"
-                android:icon="@android:drawable/star_off"
+                android:icon="@drawable/green_circle"
                 android:title="@string/start" />
 
         </menu>
@@ -58,5 +82,5 @@
                 android:icon="@android:drawable/ic_menu_view"
                 android:title="@string/tests" />
         </menu>
-    </item>
+    </item>-->
 </menu>

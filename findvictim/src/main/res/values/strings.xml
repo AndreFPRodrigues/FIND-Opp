@@ -92,4 +92,5 @@
 
     <!-- Alert Activity -->
     <string name="title_activity_alert">Alert</string>
+    <string name="title_activity_teste">Teste</string>
 </resources>
