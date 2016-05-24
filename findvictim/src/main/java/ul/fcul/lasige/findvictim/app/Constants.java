@@ -14,6 +14,13 @@ public class Constants {
     public static final int GET_ANSWERED_OPTION_REQUEST_CODE = 5;
     public static final int POST_MESSAGE_REQUEST_CODE = 6;
 
+    // alerts
+    public static boolean ONGOING_ALERT = false;
+
+    // platform manually started
+    public static boolean MANUALLY_STARTED = false;
+    public static boolean MANUALLY_STOPPED = false;
+
     // voice commands time
     public static int ASK_STATE_TIME = 1;
 

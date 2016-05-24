@@ -99,10 +99,6 @@ public class MainActivity extends AppCompatActivity implements
     private TextToSpeech tts;
     // main activity menu
     private Menu menu;
-    // detecta se a plataforma foi desligada manualmente
-    private boolean manuallyStop, manuallyStart;
-    // alertt
-    private boolean ongoingAlert = false;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -173,7 +169,7 @@ public class MainActivity extends AppCompatActivity implements
      */
     @Override
     public void onBackPressed() {
-        if (ongoingAlert) {
+        if (Constants.ONGOING_ALERT) {
             AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
             b.setTitle("Exit Application");
             b.setMessage("If you really want to exit the application, please avoid spending unnecessary battery. Exit anyway?");
@@ -403,9 +399,20 @@ public class MainActivity extends AppCompatActivity implements
 
         if (!cursor.moveToFirst()) {
             cursor.close();
+            if (Constants.MANUALLY_STARTED) {
+                menu.findItem(R.id.platform_status).setIcon(R.drawable.green_circle);
+            }
+            if (Constants.MANUALLY_STOPPED) {
+                menu.findItem(R.id.platform_status).setIcon(R.drawable.red_circle);
+            }
         }
         else {
-            menu.findItem(R.id.platform_status).setIcon(R.drawable.green_circle);
+            if (Constants.MANUALLY_STARTED) {
+                menu.findItem(R.id.platform_status).setIcon(R.drawable.green_circle);
+            }
+            if (Constants.MANUALLY_STOPPED) {
+                menu.findItem(R.id.platform_status).setIcon(R.drawable.red_circle);
+            }
         }
         return true;
     }
@@ -536,7 +543,7 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     @Override
-    public boolean onNavigationItemSelected(MenuItem item) {
+    public boolean onNavigationItemSelected(final MenuItem item) {
 
         int id = item.getItemId();
 
@@ -544,13 +551,41 @@ public class MainActivity extends AppCompatActivity implements
             if(mSensors != null) {
                 if(mSensors.isActivated()) {
                     // turn off
-                    MenuItem status = menu.findItem(R.id.platform_status);
-                    status.setIcon(R.drawable.red_circle);
-                    item.setTitle("Start");
-                    item.setIcon(R.drawable.red_circle);
-                    mSensors.deactivateSensors();
-                    manuallyStop = true;
-                    Toast.makeText(getApplicationContext(), "Stopped", Toast.LENGTH_SHORT).show();
+                    if (Constants.ONGOING_ALERT) {
+                        AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
+                        b.setTitle("Stop Services");
+                        b.setMessage("There's an ongoing alert. Do you really want to stop the services?");
+                        b.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                MenuItem status = menu.findItem(R.id.platform_status);
+                                status.setIcon(R.drawable.red_circle);
+                                item.setTitle("Start");
+                                item.setIcon(R.drawable.red_circle);
+                                mSensors.deactivateSensors();
+                                Constants.MANUALLY_STOPPED = true;
+                                Constants.MANUALLY_STARTED = false;
+                                Toast.makeText(getApplicationContext(), "Stopped", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        b.setNegativeButton("No", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        });
+                        b.show();
+                    }
+                    else {
+                        MenuItem status = menu.findItem(R.id.platform_status);
+                        status.setIcon(R.drawable.red_circle);
+                        item.setTitle("Start");
+                        item.setIcon(R.drawable.red_circle);
+                        mSensors.deactivateSensors();
+                        Constants.MANUALLY_STOPPED = true;
+                        Constants.MANUALLY_STARTED = false;
+                        Toast.makeText(getApplicationContext(), "Stopped", Toast.LENGTH_SHORT).show();
+                    }
                 }
                 else {
                     MenuItem status = menu.findItem(R.id.platform_status);
@@ -558,6 +593,8 @@ public class MainActivity extends AppCompatActivity implements
                     item.setTitle("Stop");
                     item.setIcon(R.drawable.green_circle);
                     mSensors.activateSensors(true);
+                    Constants.MANUALLY_STARTED = true;
+                    Constants.MANUALLY_STOPPED = false;
                     Toast.makeText(getApplicationContext(), "Started", Toast.LENGTH_SHORT).show();
                 }
             }
@@ -758,47 +795,70 @@ public class MainActivity extends AppCompatActivity implements
     }
 
     private void checkAlert () {
-        Cursor cursor = Alert.Store.fetchAlerts(
+       Cursor cursor = Alert.Store.fetchAlerts(
                 com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
                 Alert.STATUS.ONGOING);
 
-        if (!cursor.moveToFirst()) {
+        /*Cursor cursor2 = Alert.Store.fetchAlerts(
+                com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
+                Alert.STATUS.SCHEDULED);*/
+
+        if (!cursor.moveToFirst() /*|| !cursor2.moveToFirst()*/) {
             cursor.close();
-            if (ongoingAlert) {
-                MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
-                mi.setIcon(R.drawable.red_circle);
-                mi.setTitle("Start");
-                View header = navigationView.getHeaderView(0);
-                ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
-                assert iv != null;
-                iv.setImageResource(R.drawable.alert_ok);
-                TextView tv = (TextView) header.findViewById(R.id.alert_name);
-                tv.setText("No alerts at the moment");
-                Button b = (Button) header.findViewById(R.id.see_alert);
-                b.setVisibility(View.GONE);
+            //cursor2.close();
+            if (Constants.ONGOING_ALERT) {
+                Constants.ONGOING_ALERT = false;
             }
-        }
-        else {
-            if (!manuallyStop) {
-                Alert a = Alert.fromCursor(cursor);
+            if (Constants.MANUALLY_STARTED) {
                 MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
                 mi.setIcon(R.drawable.green_circle);
                 mi.setTitle("Stop");
-                View header = navigationView.getHeaderView(0);
-                ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
-                assert iv != null;
-                iv.setImageResource(R.drawable.danger_alert);
-                TextView tv = (TextView) header.findViewById(R.id.alert_name);
-                tv.setText(a.getName());
-                Button b = (Button) header.findViewById(R.id.see_alert);
-                b.setVisibility(View.VISIBLE);
-                b.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        startActivity(new Intent(MainActivity.this, AlertActivity.class));
-                    }
-                });
             }
+            if (Constants.MANUALLY_STOPPED) {
+                MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
+                mi.setIcon(R.drawable.red_circle);
+                mi.setTitle("Start");
+            }
+
+            View header = navigationView.getHeaderView(0);
+            ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
+            assert iv != null;
+            iv.setImageResource(R.drawable.alert_ok);
+            TextView tv = (TextView) header.findViewById(R.id.alert_name);
+            tv.setText("No alerts");
+            Button b = (Button) header.findViewById(R.id.see_alert);
+            b.setVisibility(View.GONE);
+        }
+        else {
+            Alert a = Alert.fromCursor(cursor);
+            Constants.ONGOING_ALERT = true;
+            if (Constants.MANUALLY_STARTED) {
+                MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
+                mi.setIcon(R.drawable.green_circle);
+                mi.setTitle("Stop");
+            }
+            if (Constants.MANUALLY_STOPPED) {
+                MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
+                mi.setIcon(R.drawable.red_circle);
+                mi.setTitle("Start");
+            }
+
+            View header = navigationView.getHeaderView(0);
+            ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
+            assert iv != null;
+            iv.setImageResource(R.drawable.danger_alert);
+            TextView tv = (TextView) header.findViewById(R.id.alert_name);
+            tv.setText(a.getName() + " - " + a.getType());
+            TextView tv2 = (TextView) header.findViewById(R.id.description);
+            tv2.setText(a.getDescription());
+            Button b = (Button) header.findViewById(R.id.see_alert);
+            b.setVisibility(View.VISIBLE);
+            b.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View v) {
+                    startActivity(new Intent(MainActivity.this, AlertActivity.class));
+                }
+            });
         }
     }
 }
