@@ -52,6 +52,8 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Polygon;
+import com.google.android.gms.maps.model.PolygonOptions;
 
 import java.io.File;
 import java.io.IOException;
@@ -802,6 +804,7 @@ public class MainActivity extends AppCompatActivity implements
                         startActivity(i);
                     }
                 });
+                setAlertBounds(a);
             }
         }
         else if (Constants.ONGOING_ALERT == 2) {
@@ -835,6 +838,7 @@ public class MainActivity extends AppCompatActivity implements
                 MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
                 mi.setIcon(R.drawable.green_circle);
                 mi.setTitle("Stop");
+                setAlertBounds(a);
             }
         }
         else if (Constants.ONGOING_ALERT == 0) {
@@ -854,6 +858,17 @@ public class MainActivity extends AppCompatActivity implements
             mi.setIcon(R.drawable.red_circle);
             mi.setTitle("Start");
         }
+    }
+
+    private void setAlertBounds (Alert mAlert) {
+        PolygonOptions rectOptions = new PolygonOptions()
+                .add(new LatLng(mAlert.getLatStart(), mAlert.getLonStart()))
+                .add(new LatLng(mAlert.getLatEnd(), mAlert.getLonStart()))
+                .add(new LatLng(mAlert.getLatEnd(), mAlert.getLonEnd()))
+                .add(new LatLng(mAlert.getLatStart(), mAlert.getLonEnd()));
+
+        Polygon polyline = googleMap.addPolygon(rectOptions);
+        polyline.setZIndex(100);
     }
 }
 
