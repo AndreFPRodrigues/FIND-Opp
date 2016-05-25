@@ -58,7 +58,9 @@ public class AlertActivity extends FragmentActivity  {
             findViewById(R.id.alertDetails).setVisibility(View.VISIBLE);
             if(mAlert!=null)
                 setAlertParameters();
-
+            if(!mIsInside){
+                cancelNotification();
+            }
             //send alert received
             RegisterInFind.sharedInstance(this).receivedAlert(mAlert, mIsInside);
         }

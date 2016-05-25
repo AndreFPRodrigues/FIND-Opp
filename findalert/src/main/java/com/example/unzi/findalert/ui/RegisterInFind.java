@@ -1,5 +1,6 @@
 package com.example.unzi.findalert.ui;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 
@@ -68,6 +69,7 @@ public class RegisterInFind {
             alert.onAlertReceived(mAlert,isInside);
     }
     public void startAlert(int alertID){
+        cancelAlertNotification();
         for(OnAlert alert :alertObservers)
             alert.onAlertStart(alertID);
     }
@@ -79,5 +81,12 @@ public class RegisterInFind {
     public void registerCompleted(){
         for(OnRegisterComplete observer :registerObservers)
             observer.OnRegisterComplete();
+    }
+
+    private void cancelAlertNotification(){
+            NotificationManager mNotificationManager =
+                    (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            mNotificationManager.cancel(1);
+
     }
 }

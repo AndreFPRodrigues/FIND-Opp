@@ -68,6 +68,7 @@ public class MainActivity extends AppCompatActivity {
         mOnTryRegisterAgainListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                newProgressDialog("Registering. Please wait...");
                 registerGCM();
             }
         };

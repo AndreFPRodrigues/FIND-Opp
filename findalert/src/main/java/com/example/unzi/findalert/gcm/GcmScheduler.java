@@ -86,8 +86,6 @@ public class GcmScheduler {
             mAlarmManager.set(AlarmManager.RTC_WAKEUP, date.getTime() + duration, mStopSensorsIntent);
             Log.d(TAG, "Alert scheduled to stop at " + new Date(date.getTime() + duration).toString());
         }
-
-
     }
 
     private void alertNotification(Context context, Alert alert, Alert.DANGER danger) {
@@ -97,6 +95,7 @@ public class GcmScheduler {
         resultIntent.putExtra("Alert", alert);
 
         NotificationCompat.Builder mBuilder =null;
+        //hack to get hours and minutes to show a zero to the left
         String hour = "0"+alert.getDate().getHours();
         hour = hour.length()>2 ?hour.substring(1):hour;
         String minutes = "0"+alert.getDate().getMinutes();
@@ -107,7 +106,7 @@ public class GcmScheduler {
                 mBuilder = new NotificationCompat.Builder(context)
                         .setSmallIcon(R.drawable.warning_notification)
                         .setContentTitle(title   )
-                        .setContentText(alert.getDescription());
+                        .setContentText(alert.getDescription()).setOngoing(true);
                 if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     mBuilder.setColor(Color.RED);
                 }
@@ -134,10 +133,8 @@ public class GcmScheduler {
                 }
                 resultIntent.putExtra("knownLocation",true);
                 resultIntent.putExtra("isInside",false);
-
                 break;
         }
-
 
 
         // The stack builder object will contain an artificial back stack for the
@@ -178,7 +175,6 @@ public class GcmScheduler {
                 mStopSensorsIntent = null;
                 Log.v(TAG, "Cancelled stop alarm");
             }
-
             // stop sensors service
             //TODO create onStop
             RegisterInFind.sharedInstance(context).stopAlert(alertID);
