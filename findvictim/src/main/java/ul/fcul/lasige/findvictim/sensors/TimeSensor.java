@@ -106,7 +106,7 @@ public class TimeSensor extends AbstractSensor {
 
             activity.startActivityForResult(intent, Constants.ASK_REACH_PHONE_REQUEST_CODE);
         }*/
-        ((Activity) context).runOnUiThread(new Runnable() {
+        /*((Activity) context).runOnUiThread(new Runnable() {
             @Override
             public void run() {
                 NavigationView navigationView = MainActivity.getNavigationView();
@@ -119,21 +119,24 @@ public class TimeSensor extends AbstractSensor {
                         cursor.close();
                     }
                     else {
-                        Alert a = Alert.fromCursor(cursor);
+                        final Alert a = Alert.fromCursor(cursor);
                         View header = navigationView.getHeaderView(0);
                         ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
                         assert iv != null;
                         iv.setImageResource(R.drawable.danger_alert);
                         TextView tv = (TextView) header.findViewById(R.id.alert_name);
                         tv.setText(a.getName() + " - " + a.getType());
-                        TextView tv2 = (TextView) header.findViewById(R.id.description);
-                        tv2.setText(a.getDescription());
                         Button b = (Button) header.findViewById(R.id.see_alert);
                         b.setVisibility(View.VISIBLE);
                         b.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                context.startActivity(new Intent(context, AlertActivity.class));
+                                Intent i = new Intent(context, AlertActivity.class);
+                                i.putExtra("knownLocation", true);
+                                i.putExtra("isInside", true);
+                                i.putExtra("seeAlert", true);
+                                i.putExtra("Alert", a);
+                                context.startActivity(i);
                             }
                         });
                     }
@@ -147,21 +150,24 @@ public class TimeSensor extends AbstractSensor {
                         cursor.close();
                     }
                     else {
-                        Alert a = Alert.fromCursor(cursor);
+                        final Alert a = Alert.fromCursor(cursor);
                         View header = navigationView.getHeaderView(0);
                         ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
                         assert iv != null;
                         iv.setImageResource(R.drawable.danger_alert);
                         TextView tv = (TextView) header.findViewById(R.id.alert_name);
                         tv.setText(a.getName() + " - " + a.getType());
-                        TextView tv2 = (TextView) header.findViewById(R.id.description);
-                        tv2.setText(a.getDescription());
                         Button b = (Button) header.findViewById(R.id.see_alert);
                         b.setVisibility(View.VISIBLE);
                         b.setOnClickListener(new View.OnClickListener() {
                             @Override
                             public void onClick(View v) {
-                                context.startActivity(new Intent(context, AlertActivity.class));
+                                Intent i = new Intent(context, AlertActivity.class);
+                                i.putExtra("knownLocation", true);
+                                i.putExtra("isInside", true);
+                                i.putExtra("seeAlert", true);
+                                i.putExtra("Alert", a);
+                                context.startActivity(i);
                             }
                         });
                         MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
@@ -185,6 +191,6 @@ public class TimeSensor extends AbstractSensor {
                     mi.setTitle("Start");
                 }
             }
-        });
+        });*/
     }
 }

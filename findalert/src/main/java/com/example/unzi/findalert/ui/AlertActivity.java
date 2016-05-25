@@ -52,7 +52,7 @@ public class AlertActivity extends FragmentActivity  {
         startTileProvider(mMap);
 
         mAlert = (Alert) getIntent().getSerializableExtra("Alert");
-         mIsInside =  getIntent().getBooleanExtra("isInside",false);
+        mIsInside =  getIntent().getBooleanExtra("isInside",false);
 
         if(mAlert==null)
             mAlert = getActiveAlert();
@@ -78,7 +78,6 @@ public class AlertActivity extends FragmentActivity  {
             @Override
             public void onClick(View v) {
                 outsideAlert(v);
-                finish();
             }
         });
 
@@ -128,7 +127,6 @@ public class AlertActivity extends FragmentActivity  {
         findViewById(R.id.alertDetails).setVisibility(View.VISIBLE);
         GcmScheduler.getInstance(getApplicationContext()).scheduleAlarm(getApplicationContext(),mAlert);
         RegisterInFind.sharedInstance(this).receivedAlert(mAlert, true);
-
     }
 
     public void setAlertParameters( ) {
@@ -177,7 +175,7 @@ public class AlertActivity extends FragmentActivity  {
             return null;
         }
         // check whether we are inside the alert area
-        return  Alert.fromCursor(cursor);
+        return Alert.fromCursor(cursor);
     }
 
     public LatLng midPoint(double lat1,double lon1,double lat2,double lon2){

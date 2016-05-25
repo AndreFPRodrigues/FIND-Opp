@@ -8,9 +8,13 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.location.Location;
+import android.media.Ringtone;
+import android.media.RingtoneManager;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
+import android.os.Vibrator;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
@@ -93,6 +97,14 @@ public class GcmScheduler {
         // Creates an explicit intent for an Activity in your app
         Intent resultIntent = new Intent(context, AlertActivity.class);
         resultIntent.putExtra("Alert", alert);
+
+        Vibrator v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
+        v.vibrate(1000);
+
+        Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
+        Ringtone r = RingtoneManager.getRingtone(context, notification);
+        r.play();
+
 
         NotificationCompat.Builder mBuilder =null;
         //hack to get hours and minutes to show a zero to the left

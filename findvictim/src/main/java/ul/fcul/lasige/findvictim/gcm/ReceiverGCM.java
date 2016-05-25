@@ -15,6 +15,7 @@ import com.example.unzi.findalert.interfaces.OnRegisterComplete;
 import com.example.unzi.findalert.ui.AlertActivity;
 import com.example.unzi.findalert.ui.RegisterInFind;
 
+import ul.fcul.lasige.findvictim.app.Constants;
 import ul.fcul.lasige.findvictim.app.VictimApp;
 import ul.fcul.lasige.findvictim.ui.MainActivity;
 
@@ -35,6 +36,8 @@ public class ReceiverGCM implements OnAlert, OnRegisterComplete {
     @Override
     public void onAlertReceived(Alert alert, boolean isInside) {
         mAlert=alert;
+        if (Constants.ONGOING_ALERT != 2)
+            Constants.ONGOING_ALERT = 1;
     }
 
     @Override
@@ -42,6 +45,7 @@ public class ReceiverGCM implements OnAlert, OnRegisterComplete {
         showNotificationServiceActive();
         VictimApp app = (VictimApp) mContext.getApplicationContext();
         app.starSensors();
+        Constants.ONGOING_ALERT = 2;
     }
 
     @Override
@@ -50,6 +54,7 @@ public class ReceiverGCM implements OnAlert, OnRegisterComplete {
         //TODO added in sync if app is victim
         VictimApp app = (VictimApp) mContext.getApplicationContext();
         app.stopSensors();
+        Constants.ONGOING_ALERT = 0;
     }
 
     @Override

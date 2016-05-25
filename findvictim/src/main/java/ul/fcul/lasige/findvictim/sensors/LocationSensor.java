@@ -46,6 +46,7 @@ public class LocationSensor extends AbstractSensor {
     private String currentProvider;
 
     private Context context;
+    private Context mainContext;
     private LocationManager mLocManager;
     private Handler handler;
 
@@ -83,18 +84,20 @@ public class LocationSensor extends AbstractSensor {
                 Log.i(TAG, "Latitude is " + location.getLatitude()
                         + ". Longitude is " + location.getLongitude());
 
-                ((Activity) context).runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        GoogleMap gm = MainActivity.getGoogleMaps();
-                        gm.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 18.0f));
-                        if (marker != null)
-                            marker.remove();
-                        marker = gm.addMarker(new MarkerOptions()
-                                .position(new LatLng(location.getLatitude(), location.getLongitude()))
-                                .title("You"));
-                    }
-                });
+                if (mainContext != null) {
+                    ((Activity) mainContext).runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
+                            GoogleMap gm = MainActivity.getGoogleMaps();
+                            gm.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 18.0f));
+                            if (marker != null)
+                                marker.remove();
+                            marker = gm.addMarker(new MarkerOptions()
+                                    .position(new LatLng(location.getLatitude(), location.getLongitude()))
+                                    .title("You"));
+                        }
+                    });
+                }
 
                 if (currentInterval == INITIAL_INTERVAL) {
                     // first location found. Set less frequent updates
@@ -142,9 +145,10 @@ public class LocationSensor extends AbstractSensor {
      *
      * @param c Android context
      */
-    public LocationSensor(Context c) {
+    public LocationSensor(Context c, Context main) {
         super(c);
         context = c;
+        mainContext = main;
 
         mLocManager = (LocationManager) context
                 .getSystemService(Context.LOCATION_SERVICE);

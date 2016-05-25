@@ -45,6 +45,7 @@ import android.widget.Toast;
 
 import com.example.unzi.findalert.data.Alert;
 import com.example.unzi.findalert.ui.AlertActivity;
+import com.example.unzi.findalert.ui.RegisterInFind;
 import com.example.unzi.offlinemaps.TilesProvider;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
@@ -143,6 +144,9 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onResume() {
+        //Make sure we have registered the app and downloaded the map
+        RegisterInFind findRegister = RegisterInFind.sharedInstance(this);
+        findRegister.register();
         super.onResume();
     }
 
@@ -778,21 +782,24 @@ public class MainActivity extends AppCompatActivity implements
                 cursor.close();
             }
             else {
-                Alert a = Alert.fromCursor(cursor);
+                final Alert a = Alert.fromCursor(cursor);
                 View header = navigationView.getHeaderView(0);
                 ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
                 assert iv != null;
                 iv.setImageResource(R.drawable.danger_alert);
                 TextView tv = (TextView) header.findViewById(R.id.alert_name);
                 tv.setText(a.getName() + " - " + a.getType());
-                TextView tv2 = (TextView) header.findViewById(R.id.description);
-                tv2.setText(a.getDescription());
                 Button b = (Button) header.findViewById(R.id.see_alert);
                 b.setVisibility(View.VISIBLE);
                 b.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        startActivity(new Intent(MainActivity.this, AlertActivity.class));
+                        Intent i = new Intent(MainActivity.this, AlertActivity.class);
+                        i.putExtra("knownLocation", true);
+                        i.putExtra("isInside", true);
+                        i.putExtra("Alert", a);
+                        Toast.makeText(MainActivity.this, "ola", Toast.LENGTH_SHORT).show();
+                        startActivity(i);
                     }
                 });
             }
@@ -806,21 +813,23 @@ public class MainActivity extends AppCompatActivity implements
                 cursor.close();
             }
             else {
-                Alert a = Alert.fromCursor(cursor);
+                final Alert a = Alert.fromCursor(cursor);
                 View header = navigationView.getHeaderView(0);
                 ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
                 assert iv != null;
                 iv.setImageResource(R.drawable.danger_alert);
                 TextView tv = (TextView) header.findViewById(R.id.alert_name);
                 tv.setText(a.getName() + " - " + a.getType());
-                TextView tv2 = (TextView) header.findViewById(R.id.description);
-                tv2.setText(a.getDescription());
                 Button b = (Button) header.findViewById(R.id.see_alert);
                 b.setVisibility(View.VISIBLE);
                 b.setOnClickListener(new View.OnClickListener() {
                     @Override
                     public void onClick(View v) {
-                        startActivity(new Intent(MainActivity.this, AlertActivity.class));
+                        Intent i = new Intent(MainActivity.this, AlertActivity.class);
+                        i.putExtra("knownLocation", true);
+                        i.putExtra("isInside", true);
+                        i.putExtra("Alert", a);
+                        startActivity(i);
                     }
                 });
                 MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
@@ -832,6 +841,8 @@ public class MainActivity extends AppCompatActivity implements
             MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
             mi.setIcon(R.drawable.red_circle);
             mi.setTitle("Start");
+            Constants.MANUALLY_STARTED = false;
+            Constants.MANUALLY_STOPPED = false;
         }
         if (Constants.MANUALLY_STARTED) {
             MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
@@ -843,64 +854,6 @@ public class MainActivity extends AppCompatActivity implements
             mi.setIcon(R.drawable.red_circle);
             mi.setTitle("Start");
         }
-        /*
-       Cursor cursor = Alert.Store.fetchAlerts(
-                com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
-                Alert.STATUS.ONGOING);
-
-        if (!cursor.moveToFirst()) {
-            cursor.close();
-
-            if (Constants.MANUALLY_STARTED) {
-                MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
-                mi.setIcon(R.drawable.green_circle);
-                mi.setTitle("Stop");
-            }
-            if (Constants.MANUALLY_STOPPED) {
-                MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
-                mi.setIcon(R.drawable.red_circle);
-                mi.setTitle("Start");
-            }
-
-            View header = navigationView.getHeaderView(0);
-            ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
-            assert iv != null;
-            iv.setImageResource(R.drawable.alert_ok);
-            TextView tv = (TextView) header.findViewById(R.id.alert_name);
-            tv.setText("No alerts");
-            Button b = (Button) header.findViewById(R.id.see_alert);
-            b.setVisibility(View.GONE);
-        }
-        else {
-            Alert a = Alert.fromCursor(cursor);
-            if (Constants.MANUALLY_STARTED) {
-                MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
-                mi.setIcon(R.drawable.green_circle);
-                mi.setTitle("Stop");
-            }
-            if (Constants.MANUALLY_STOPPED) {
-                MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
-                mi.setIcon(R.drawable.red_circle);
-                mi.setTitle("Start");
-            }
-
-            View header = navigationView.getHeaderView(0);
-            ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
-            assert iv != null;
-            iv.setImageResource(R.drawable.danger_alert);
-            TextView tv = (TextView) header.findViewById(R.id.alert_name);
-            tv.setText(a.getName() + " - " + a.getType());
-            TextView tv2 = (TextView) header.findViewById(R.id.description);
-            tv2.setText(a.getDescription());
-            Button b = (Button) header.findViewById(R.id.see_alert);
-            b.setVisibility(View.VISIBLE);
-            b.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View v) {
-                    startActivity(new Intent(MainActivity.this, AlertActivity.class));
-                }
-            });
-        }*/
     }
 }
 
