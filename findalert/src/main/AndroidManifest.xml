@@ -21,9 +21,8 @@
         android:supportsRtl="true">
         <activity
             android:name=".ui.AlertActivity"
-            android:launchMode="singleTop"
-            android:label="@string/title_activity_alert">
-        </activity>
+            android:label="@string/title_activity_alert"
+            android:exported="true"/>
 
         <!-- RECEIVER -->
         <receiver
@@ -77,6 +76,7 @@
         <activity
             android:name=".ui.MainActivity"
             android:label="@string/app_name"
+            android:exported="true"
             android:theme="@style/AppTheme.NoActionBar">
         </activity>
 

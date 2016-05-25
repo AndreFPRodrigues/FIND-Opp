@@ -1,5 +1,6 @@
 package com.example.unzi.findalert.ui;
 
+import android.app.NotificationManager;
 import android.content.Context;
 import android.content.Intent;
 
@@ -36,11 +37,17 @@ public class RegisterInFind {
 
     public void register(){
         boolean sentToken = TokenStore.isRegistered(mContext);
-        if(!sentToken) {
+        boolean offlineMaps = TokenStore.hasOfflineMap(mContext);
+
+        if(!sentToken||!offlineMaps) {
             Intent myIntent = new Intent(mContext,MainActivity.class);
-            myIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+            myIntent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK|Intent.FLAG_ACTIVITY_CLEAR_TOP);
             mContext.startActivity(myIntent);
         }
+    }
+
+    public boolean isRegistered(){
+        return TokenStore.isRegistered(mContext);
     }
 
     public void observeOnAlert(OnAlert onAlert){
@@ -62,6 +69,7 @@ public class RegisterInFind {
             alert.onAlertReceived(mAlert,isInside);
     }
     public void startAlert(int alertID){
+        cancelAlertNotification();
         for(OnAlert alert :alertObservers)
             alert.onAlertStart(alertID);
     }
@@ -73,5 +81,12 @@ public class RegisterInFind {
     public void registerCompleted(){
         for(OnRegisterComplete observer :registerObservers)
             observer.OnRegisterComplete();
+    }
+
+    private void cancelAlertNotification(){
+            NotificationManager mNotificationManager =
+                    (NotificationManager) mContext.getSystemService(Context.NOTIFICATION_SERVICE);
+            mNotificationManager.cancel(1);
+
     }
 }

@@ -8,13 +8,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.graphics.Color;
 import android.location.Location;
-import android.media.Ringtone;
-import android.media.RingtoneManager;
-import android.net.Uri;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
-import android.os.Vibrator;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
@@ -90,8 +86,6 @@ public class GcmScheduler {
             mAlarmManager.set(AlarmManager.RTC_WAKEUP, date.getTime() + duration, mStopSensorsIntent);
             Log.d(TAG, "Alert scheduled to stop at " + new Date(date.getTime() + duration).toString());
         }
-
-
     }
 
     private void alertNotification(Context context, Alert alert, Alert.DANGER danger) {
@@ -100,21 +94,19 @@ public class GcmScheduler {
         Intent resultIntent = new Intent(context, AlertActivity.class);
         resultIntent.putExtra("Alert", alert);
 
-        Vibrator v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
-        v.vibrate(1000);
-
-        Uri notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION);
-        Ringtone r = RingtoneManager.getRingtone(context, notification);
-        r.play();
-
         NotificationCompat.Builder mBuilder =null;
+        //hack to get hours and minutes to show a zero to the left
+        String hour = "0"+alert.getDate().getHours();
+        hour = hour.length()>2 ?hour.substring(1):hour;
+        String minutes = "0"+alert.getDate().getMinutes();
+        minutes = minutes.length()>2 ?minutes.substring(1):minutes;
+        String title = alert.getName()+" at " +hour+ ":" +minutes;
         switch (danger){
             case IN_LOCATION:
                 mBuilder = new NotificationCompat.Builder(context)
                         .setSmallIcon(R.drawable.warning_notification)
-                        .setContentTitle(alert.getName()+" at " +alert.getDate().getHours() + ":" +alert.getDate().getMinutes()  )
-                        .setContentText(alert.getDescription())
-                        .setAutoCancel(true);
+                        .setContentTitle(title   )
+                        .setContentText(alert.getDescription()).setOngoing(true);
                 if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     mBuilder.setColor(Color.RED);
                 }
@@ -124,10 +116,8 @@ public class GcmScheduler {
             case UNKNOWN:
                 mBuilder = new NotificationCompat.Builder(context)
                         .setSmallIcon(R.drawable.warning_notification_y)
-                        .setContentTitle(alert.getName()+" at " +alert.getDate().getHours() + ":" +alert.getDate().getMinutes()  )
-                        .setContentText(alert.getDescription())
-                        .setOngoing(true)
-                        .setAutoCancel(true);
+                        .setContentTitle(title  )
+                        .setContentText(alert.getDescription()).setOngoing(true);
                 if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     mBuilder.setColor(Color.YELLOW);
                 }
@@ -136,18 +126,15 @@ public class GcmScheduler {
             case NOT_IN_LOCATION:
                 mBuilder = new NotificationCompat.Builder(context)
                         .setSmallIcon(R.drawable.warning_notification_g)
-                        .setContentTitle(alert.getName()+" at " +alert.getDate().getHours() + ":" +alert.getDate().getMinutes()  )
-                        .setContentText(alert.getDescription())
-                        .setAutoCancel(true);
+                        .setContentTitle(title)
+                        .setContentText(alert.getDescription());
                 if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     mBuilder.setColor(Color.GREEN);
                 }
                 resultIntent.putExtra("knownLocation",true);
                 resultIntent.putExtra("isInside",false);
-
                 break;
         }
-
 
 
         // The stack builder object will contain an artificial back stack for the
@@ -188,12 +175,9 @@ public class GcmScheduler {
                 mStopSensorsIntent = null;
                 Log.v(TAG, "Cancelled stop alarm");
             }
-
             // stop sensors service
             //TODO create onStop
             RegisterInFind.sharedInstance(context).stopAlert(alertID);
-           /* VictimApp app = (VictimApp) context.getApplicationContext();
-            app.stopSensors();*/
         }
     }
 
@@ -269,10 +253,7 @@ public class GcmScheduler {
                             alertID, Alert.STATUS.ONGOING);
 
                     // start sensors service
-                   //TODO ON RECEIVE ALERT START
                     RegisterInFind.sharedInstance(context).startAlert(alertID);
-                   /* VictimApp app = (VictimApp) context.getApplicationContext();
-                    app.starSensors();*/
 
                 } else if (action != null && action.equalsIgnoreCase((ACTION_SCHEDULE_STOP))) {
                     Log.d(TAG, "Received alarm to stop sensors");
@@ -282,11 +263,8 @@ public class GcmScheduler {
                             alertID, Alert.STATUS.STOPPED);
 
                     // stop sensors service
-                    //TODO ONRECEIVE ALERT STOP
                     RegisterInFind.sharedInstance(context).stopAlert(alertID);
 
-                   /* VictimApp app = (VictimApp) context.getApplicationContext();
-                    app.stopSensors();*/
                 }
             }
         }

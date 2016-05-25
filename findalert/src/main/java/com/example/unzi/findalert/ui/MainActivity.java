@@ -1,6 +1,7 @@
 package com.example.unzi.findalert.ui;
 
 import android.accounts.AccountManager;
+import android.app.ProgressDialog;
 import android.content.ActivityNotFoundException;
 import android.content.BroadcastReceiver;
 import android.content.Context;
@@ -9,6 +10,7 @@ import android.content.IntentFilter;
 import android.graphics.Color;
 import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.support.design.widget.CoordinatorLayout;
@@ -16,22 +18,25 @@ import android.support.design.widget.Snackbar;
 import android.support.v4.content.LocalBroadcastManager;
 import android.support.v7.app.AppCompatActivity;
 import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.WindowManager;
 
 import com.example.unzi.findalert.R;
 import com.example.unzi.findalert.data.TokenStore;
 import com.example.unzi.findalert.gcm.RegistrationIntentService;
 import com.example.unzi.findalert.utils.DeviceUtils;
+import com.example.unzi.offlinemaps.DownloadFile;
 import com.google.android.gms.auth.GoogleAuthUtil;
 import com.google.android.gms.common.AccountPicker;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GoogleApiAvailability;
 
+import java.io.File;
 
-public class MainActivity extends AppCompatActivity{
+
+public class MainActivity extends AppCompatActivity {
     private static final String TAG = MainActivity.class.getSimpleName();
 
     // gcm
@@ -44,23 +49,34 @@ public class MainActivity extends AppCompatActivity{
 
 
     // ui
-    private View.OnClickListener mOnTryAgainListener;
+    private View.OnClickListener mOnTryRegisterAgainListener;
+    private View.OnClickListener mOnTryDownloadAgainListener;
+
     private View.OnClickListener mFinish;
+    private ProgressDialog mDialog;
+    private CoordinatorLayout mCoordinatorLayout;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-
-        // set layout to fullscreen
-        getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
-
-        final CoordinatorLayout coordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinatorLayout);
+        setContentView(R.layout.activity_register);
 
 
-        mOnTryAgainListener = new View.OnClickListener() {
+        mCoordinatorLayout = (CoordinatorLayout) findViewById(R.id.coordinatorLayout);
+
+
+        mOnTryRegisterAgainListener = new View.OnClickListener() {
             @Override
             public void onClick(View v) {
+                newProgressDialog("Registering. Please wait...");
                 registerGCM();
+            }
+        };
+
+        mOnTryDownloadAgainListener = new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                getTileDatabase(getApplicationContext());
             }
         };
 
@@ -77,26 +93,31 @@ public class MainActivity extends AppCompatActivity{
             public void onReceive(Context context, Intent intent) {
                 boolean sentToken = TokenStore.isRegistered(getApplicationContext());
                 if (sentToken) {
-                    RegisterInFind.sharedInstance(getApplicationContext()).registerCompleted();
-                    Snackbar.make(coordinatorLayout, "Congratulations! The registration is complete", Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.GREEN).setAction("Finish", mFinish).show();
-
+                    mDialog.dismiss();
+                    getTileDatabase(context);
+                    Log.d(TAG, "Successful registration");
                     //TODO make sure we have permissions
                 } else {
                     Log.d(TAG, "token not sent");
-                    Snackbar snack = Snackbar.make(coordinatorLayout, "Registration failed. Check your Internet connection",
+                    Snackbar snack = Snackbar.make(mCoordinatorLayout, "Registration failed. Check your Internet connection",
                             Snackbar.LENGTH_INDEFINITE);
-                    snack.setAction("Try again", mOnTryAgainListener);
+                    snack.setAction("Try again", mOnTryRegisterAgainListener);
+                    View view = snack.getView();
+                    CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) view.getLayoutParams();
+                    params.gravity = Gravity.CENTER;
+                    view.setLayoutParams(params);
                     snack.show();
+                    mDialog.dismiss();
+
                 }
             }
         };
-
 
         if (checkPlayServices()) {
             // play services are installed
 
             boolean sentToken = TokenStore.isRegistered(getApplicationContext());
-            if(!sentToken) {
+            if (!sentToken) {
                 // if not registered, then ask for google account
                 try {
                     Intent intent = AccountPicker.newChooseAccountIntent(null,
@@ -111,9 +132,72 @@ public class MainActivity extends AppCompatActivity{
                 }
             }
         }
+
+
+
     }
 
+    public void newProgressDialog(String message) {
+        //registering progress dialog
+        mDialog = new ProgressDialog(this); // this = YourActivity
+        mDialog.setProgressStyle(ProgressDialog.STYLE_SPINNER);
+        mDialog.setMessage(message);
+        mDialog.setIndeterminate(true);
+        mDialog.setCanceledOnTouchOutside(false);
+        mDialog.setCancelable(false);
+        mDialog.show();
+    }
 
+    public void getTileDatabase(Context context) {
+        Log.d(TAG, "dbLocation:" + context.getFilesDir() + "/mapapp/world.sqlitedb");
+        File bd = new File(context.getFilesDir() + "/mapapp/world.sqlitedb");
+        DownloadFile d;
+        if (!bd.exists()) {
+            DownloadDatabase dd = new DownloadDatabase(context);
+            dd.execute();
+        }
+    }
+
+    private class DownloadDatabase extends AsyncTask<Void, Void, Boolean> {
+        private Context context;
+
+        public DownloadDatabase(Context c) {
+            super();
+            this.context = c;
+            newProgressDialog("Downloading map database. Please wait...");
+        }
+
+        @Override
+        protected void onPostExecute(Boolean successful) {
+            mDialog.dismiss();
+            if(successful) {
+                //get offline tile database
+                Snackbar snack = Snackbar.make(mCoordinatorLayout, "Congratulations! The registration is complete", Snackbar.LENGTH_INDEFINITE).setActionTextColor(Color.GREEN).setAction("Finish", mFinish);
+                View view = snack.getView();
+                CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) view.getLayoutParams();
+                params.gravity = Gravity.CENTER;
+                view.setLayoutParams(params);
+                snack.show();
+                TokenStore.saveOfflineMapCompleted(context);
+                RegisterInFind.sharedInstance(getApplicationContext()).registerCompleted();
+            }else{
+                Snackbar snack = Snackbar.make(mCoordinatorLayout, "Download failed. Check your Internet connection",
+                        Snackbar.LENGTH_INDEFINITE);
+                snack.setAction("Try again", mOnTryDownloadAgainListener);
+                View view = snack.getView();
+                CoordinatorLayout.LayoutParams params = (CoordinatorLayout.LayoutParams) view.getLayoutParams();
+                params.gravity = Gravity.CENTER;
+                view.setLayoutParams(params);
+                snack.show();
+            }
+
+        }
+
+        @Override
+        protected Boolean doInBackground(Void... params) {
+            return  DownloadFile.getMapDatabase(context);
+        }
+    }
 
     @Override
     protected void onResume() {
@@ -157,6 +241,7 @@ public class MainActivity extends AppCompatActivity{
 
     /**
      * Result from Google Account picker activity
+     *
      * @param requestCode
      * @param resultCode
      * @param data
@@ -167,10 +252,12 @@ public class MainActivity extends AppCompatActivity{
             String accountName = data.getStringExtra(AccountManager.KEY_ACCOUNT_NAME);
             mGoogleAccount = accountName;
         } else {
-            mGoogleAccount= "noID";
+            mGoogleAccount = "noID";
         }
         Log.d(TAG, "Google account: " + mGoogleAccount);
         registerGCM();
+        //registering progress dialog
+        newProgressDialog("Registering. Please wait...");
     }
 
     private void registerGCM() {
@@ -181,22 +268,21 @@ public class MainActivity extends AppCompatActivity{
         // gets mac_address (user identification)
         WifiManager manager = (WifiManager) getSystemService(Context.WIFI_SERVICE);
         WifiInfo info = manager.getConnectionInfo();
-        if(!manager.isWifiEnabled())
+        if (!manager.isWifiEnabled())
             manager.setWifiEnabled(true);
         String mac;
         int currentapiVersion = Build.VERSION.SDK_INT;
-        if (currentapiVersion <= Build.VERSION_CODES.LOLLIPOP_MR1){
+        if (currentapiVersion <= Build.VERSION_CODES.LOLLIPOP_MR1) {
             mac = info.getMacAddress();
-        } else{
+        } else {
             mac = DeviceUtils.getWifiMacAddress();
         }
 
-        Log.d(TAG, "Mac_address:"+ mac);
+        Log.d(TAG, "Mac_address:" + mac);
 
         // Start IntentService to register this application with GCM.
         RegistrationIntentService.startGCMRegistration(this, locale, mac, mGoogleAccount);
     }
-
 
 
     /*
@@ -218,7 +304,7 @@ public class MainActivity extends AppCompatActivity{
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            Intent i = new Intent(this,AlertActivity.class);
+            Intent i = new Intent(this, AlertActivity.class);
             startActivity(i);
 
             return true;
@@ -227,6 +313,9 @@ public class MainActivity extends AppCompatActivity{
         return super.onOptionsItemSelected(item);
     }
 
+    @Override
+    public void onBackPressed() {
+    }
 
 
 }

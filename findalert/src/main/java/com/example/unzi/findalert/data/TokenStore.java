@@ -10,9 +10,10 @@ public class TokenStore {
 
     // file name
     private static final String PREFERENCE_FILE = "FindVictimPreferences";
-    // sensor service
-    public static final String KEY_SENSOR_STATE = "sensorState";
-    public static final String KEY_SENSOR_IS_FIRST_LOCATION = "isFirstLocation";
+
+    // offline maps
+    public static final String KEY_MAP_DATABASE_DOWNLOAD = "mapDBDownloaded";
+
     // registration
     private static final String KEY_SENT_TOKEN_TO_SERVER = "registrationSentTokenToServer";
     public static final String KEY_REGISTRATION_COMPLETE = "registrationComplete";
@@ -60,6 +61,12 @@ public class TokenStore {
         return getSharedPreferences(context).getString(KEY_REGISTRATION_MAC, "unknown");
     }
 
-
+    //offline maps
+    public static synchronized void saveOfflineMapCompleted(Context context) {
+        getSharedPreferences(context).edit().putBoolean(KEY_MAP_DATABASE_DOWNLOAD, true).apply();
+    }
+    public static synchronized boolean hasOfflineMap(Context context) {
+        return getSharedPreferences(context).getBoolean(KEY_MAP_DATABASE_DOWNLOAD, false);
+    }
 
 }

@@ -33,6 +33,7 @@ public class AlertActivity extends FragmentActivity  {
     private GoogleMap mMap;
     private Alert mAlert;
     private boolean mIsInside;
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -65,7 +66,9 @@ public class AlertActivity extends FragmentActivity  {
             findViewById(R.id.alertDetails).setVisibility(View.VISIBLE);
             if(mAlert!=null)
                 setAlertParameters();
-
+            if(!mIsInside){
+                cancelNotification();
+            }
             //send alert received
             RegisterInFind.sharedInstance(this).receivedAlert(mAlert, mIsInside);
         }
