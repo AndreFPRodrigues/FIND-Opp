@@ -97,8 +97,6 @@ public class MainActivity extends AppCompatActivity implements
     private static SQLiteDatabase mDb;
     // voice commands
     private TextToSpeech tts;
-    // main activity menu
-    private Menu menu;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -169,7 +167,7 @@ public class MainActivity extends AppCompatActivity implements
      */
     @Override
     public void onBackPressed() {
-        if (Constants.ONGOING_ALERT) {
+        if (Constants.ONGOING_ALERT == 2) {
             AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
             b.setTitle("Exit Application");
             b.setMessage("If you really want to exit the application, please avoid spending unnecessary battery. Exit anyway?");
@@ -392,28 +390,6 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         getMenuInflater().inflate(R.menu.victim, menu);
-        this.menu = menu;
-        Cursor cursor = Alert.Store.fetchAlerts(
-                com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
-                Alert.STATUS.ONGOING);
-
-        if (!cursor.moveToFirst()) {
-            cursor.close();
-            if (Constants.MANUALLY_STARTED) {
-                menu.findItem(R.id.platform_status).setIcon(R.drawable.green_circle);
-            }
-            if (Constants.MANUALLY_STOPPED) {
-                menu.findItem(R.id.platform_status).setIcon(R.drawable.red_circle);
-            }
-        }
-        else {
-            if (Constants.MANUALLY_STARTED) {
-                menu.findItem(R.id.platform_status).setIcon(R.drawable.green_circle);
-            }
-            if (Constants.MANUALLY_STOPPED) {
-                menu.findItem(R.id.platform_status).setIcon(R.drawable.red_circle);
-            }
-        }
         return true;
     }
 
@@ -551,15 +527,13 @@ public class MainActivity extends AppCompatActivity implements
             if(mSensors != null) {
                 if(mSensors.isActivated()) {
                     // turn off
-                    if (Constants.ONGOING_ALERT) {
+                    if (Constants.ONGOING_ALERT == 2) {
                         AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
                         b.setTitle("Stop Services");
                         b.setMessage("There's an ongoing alert. Do you really want to stop the services?");
                         b.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
                             @Override
                             public void onClick(DialogInterface dialog, int which) {
-                                MenuItem status = menu.findItem(R.id.platform_status);
-                                status.setIcon(R.drawable.red_circle);
                                 item.setTitle("Start");
                                 item.setIcon(R.drawable.red_circle);
                                 mSensors.deactivateSensors();
@@ -577,8 +551,6 @@ public class MainActivity extends AppCompatActivity implements
                         b.show();
                     }
                     else {
-                        MenuItem status = menu.findItem(R.id.platform_status);
-                        status.setIcon(R.drawable.red_circle);
                         item.setTitle("Start");
                         item.setIcon(R.drawable.red_circle);
                         mSensors.deactivateSensors();
@@ -588,8 +560,6 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 }
                 else {
-                    MenuItem status = menu.findItem(R.id.platform_status);
-                    status.setIcon(R.drawable.green_circle);
                     item.setTitle("Stop");
                     item.setIcon(R.drawable.green_circle);
                     mSensors.activateSensors(true);
@@ -735,7 +705,7 @@ public class MainActivity extends AppCompatActivity implements
                 Log.d(TAG, "Images folder created successfully");
     }
 
-    NavigationView navigationView;
+    static NavigationView navigationView;
 
     private DrawerLayout setNavigationDrawer () {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
@@ -794,21 +764,93 @@ public class MainActivity extends AppCompatActivity implements
         return mDb;
     }
 
-    private void checkAlert () {
+    public static NavigationView getNavigationView () {
+        return navigationView;
+    }
+
+    public void checkAlert () {
+        if (Constants.ONGOING_ALERT == 1) {
+            Cursor cursor = Alert.Store.fetchAlerts(
+                    com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
+                    Alert.STATUS.SCHEDULED);
+
+            if (!cursor.moveToFirst()) {
+                cursor.close();
+            }
+            else {
+                Alert a = Alert.fromCursor(cursor);
+                View header = navigationView.getHeaderView(0);
+                ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
+                assert iv != null;
+                iv.setImageResource(R.drawable.danger_alert);
+                TextView tv = (TextView) header.findViewById(R.id.alert_name);
+                tv.setText(a.getName() + " - " + a.getType());
+                TextView tv2 = (TextView) header.findViewById(R.id.description);
+                tv2.setText(a.getDescription());
+                Button b = (Button) header.findViewById(R.id.see_alert);
+                b.setVisibility(View.VISIBLE);
+                b.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        startActivity(new Intent(MainActivity.this, AlertActivity.class));
+                    }
+                });
+            }
+        }
+        else if (Constants.ONGOING_ALERT == 2) {
+            Cursor cursor = Alert.Store.fetchAlerts(
+                    com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
+                    Alert.STATUS.ONGOING);
+
+            if (!cursor.moveToFirst()) {
+                cursor.close();
+            }
+            else {
+                Alert a = Alert.fromCursor(cursor);
+                View header = navigationView.getHeaderView(0);
+                ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
+                assert iv != null;
+                iv.setImageResource(R.drawable.danger_alert);
+                TextView tv = (TextView) header.findViewById(R.id.alert_name);
+                tv.setText(a.getName() + " - " + a.getType());
+                TextView tv2 = (TextView) header.findViewById(R.id.description);
+                tv2.setText(a.getDescription());
+                Button b = (Button) header.findViewById(R.id.see_alert);
+                b.setVisibility(View.VISIBLE);
+                b.setOnClickListener(new View.OnClickListener() {
+                    @Override
+                    public void onClick(View v) {
+                        startActivity(new Intent(MainActivity.this, AlertActivity.class));
+                    }
+                });
+                MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
+                mi.setIcon(R.drawable.green_circle);
+                mi.setTitle("Stop");
+            }
+        }
+        else if (Constants.ONGOING_ALERT == 0) {
+            MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
+            mi.setIcon(R.drawable.red_circle);
+            mi.setTitle("Start");
+        }
+        if (Constants.MANUALLY_STARTED) {
+            MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
+            mi.setIcon(R.drawable.green_circle);
+            mi.setTitle("Stop");
+        }
+        if (Constants.MANUALLY_STOPPED) {
+            MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
+            mi.setIcon(R.drawable.red_circle);
+            mi.setTitle("Start");
+        }
+        /*
        Cursor cursor = Alert.Store.fetchAlerts(
                 com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
                 Alert.STATUS.ONGOING);
 
-        /*Cursor cursor2 = Alert.Store.fetchAlerts(
-                com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
-                Alert.STATUS.SCHEDULED);*/
-
-        if (!cursor.moveToFirst() /*|| !cursor2.moveToFirst()*/) {
+        if (!cursor.moveToFirst()) {
             cursor.close();
-            //cursor2.close();
-            if (Constants.ONGOING_ALERT) {
-                Constants.ONGOING_ALERT = false;
-            }
+
             if (Constants.MANUALLY_STARTED) {
                 MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
                 mi.setIcon(R.drawable.green_circle);
@@ -831,7 +873,6 @@ public class MainActivity extends AppCompatActivity implements
         }
         else {
             Alert a = Alert.fromCursor(cursor);
-            Constants.ONGOING_ALERT = true;
             if (Constants.MANUALLY_STARTED) {
                 MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
                 mi.setIcon(R.drawable.green_circle);
@@ -859,7 +900,7 @@ public class MainActivity extends AppCompatActivity implements
                     startActivity(new Intent(MainActivity.this, AlertActivity.class));
                 }
             });
-        }
+        }*/
     }
 }
 

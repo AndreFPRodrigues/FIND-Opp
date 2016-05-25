@@ -5,12 +5,6 @@
     tools:context="ui.MainActivity">
 
     <item
-        android:id="@+id/platform_status"
-        android:icon="@drawable/red_circle"
-        android:title="@string/record_msg"
-        app:showAsAction="ifRoom" />
-
-    <item
         android:id="@+id/menu_victim_record"
         android:icon="@drawable/ic_mic_none_white_48dp"
         android:title="@string/record_msg"

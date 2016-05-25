@@ -176,12 +176,12 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
         // add sensors
         mSensorManager.addSensor(SensorManager.SensorType.Accelerometer, new AccelerometerSensor(getApplicationContext()), false);
         mSensorManager.addSensor(SensorManager.SensorType.Battery, new BatterySensor(getApplicationContext()), false);
-        mSensorManager.addSensor(SensorManager.SensorType.Location, new LocationSensor(mainContext), false);
+        mSensorManager.addSensor(SensorManager.SensorType.Location, new LocationSensor(mainContext!=null?mainContext:getApplicationContext()), false);
         mSensorManager.addSensor(SensorManager.SensorType.ScreenOn, new ScreenSensor(getApplicationContext()),false);
         mSensorManager.addSensor(SensorManager.SensorType.Proximity, new ProximitySensor(getApplicationContext()),false);
         mSensorManager.addSensor(SensorManager.SensorType.Light, new LightSensor(getApplicationContext()),false);
         mSensorManager.addSensor(SensorManager.SensorType.StepCounter, new StepCounterSensor(getApplicationContext()),false);
-        //mSensorManager.addSensor(SensorManager.SensorType.Time, new TimeSensor(mainContext), false);
+        mSensorManager.addSensor(SensorManager.SensorType.Time, new TimeSensor(mainContext!=null?mainContext:getApplicationContext()), false);
 
         mUploadBroadcastReceiver = new BroadcastReceiver() {
             @Override

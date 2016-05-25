@@ -5,15 +5,27 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.Cursor;
 import android.os.Build;
 import android.os.Vibrator;
 import android.speech.RecognizerIntent;
 import android.speech.tts.TextToSpeech;
+import android.support.design.widget.NavigationView;
+import android.view.MenuItem;
+import android.view.View;
 import android.view.WindowManager;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+
+import com.example.unzi.findalert.data.Alert;
+import com.example.unzi.findalert.ui.AlertActivity;
 
 import java.util.Locale;
 
+import ul.fcul.lasige.findvictim.R;
 import ul.fcul.lasige.findvictim.app.Constants;
+import ul.fcul.lasige.findvictim.ui.MainActivity;
 
 /**
  * Created by afons on 06/04/2016.
@@ -59,7 +71,7 @@ public class TimeSensor extends AbstractSensor {
     }
 
     private void checkTime(final Context context) {
-        if (time % Constants.ASK_STATE_TIME == 0) {
+        /*if (time % Constants.ASK_STATE_TIME == 0) {
             Vibrator v = (Vibrator) context.getSystemService(Context.VIBRATOR_SERVICE);
             v.vibrate(1000);
 
@@ -93,6 +105,86 @@ public class TimeSensor extends AbstractSensor {
             intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
 
             activity.startActivityForResult(intent, Constants.ASK_REACH_PHONE_REQUEST_CODE);
-        }
+        }*/
+        ((Activity) context).runOnUiThread(new Runnable() {
+            @Override
+            public void run() {
+                NavigationView navigationView = MainActivity.getNavigationView();
+                if (Constants.ONGOING_ALERT == 1) {
+                    Cursor cursor = Alert.Store.fetchAlerts(
+                            com.example.unzi.findalert.data.DatabaseHelper.getInstance(context).getReadableDatabase(),
+                            Alert.STATUS.SCHEDULED);
+
+                    if (!cursor.moveToFirst()) {
+                        cursor.close();
+                    }
+                    else {
+                        Alert a = Alert.fromCursor(cursor);
+                        View header = navigationView.getHeaderView(0);
+                        ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
+                        assert iv != null;
+                        iv.setImageResource(R.drawable.danger_alert);
+                        TextView tv = (TextView) header.findViewById(R.id.alert_name);
+                        tv.setText(a.getName() + " - " + a.getType());
+                        TextView tv2 = (TextView) header.findViewById(R.id.description);
+                        tv2.setText(a.getDescription());
+                        Button b = (Button) header.findViewById(R.id.see_alert);
+                        b.setVisibility(View.VISIBLE);
+                        b.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                context.startActivity(new Intent(context, AlertActivity.class));
+                            }
+                        });
+                    }
+                }
+                else if (Constants.ONGOING_ALERT == 2) {
+                    Cursor cursor = Alert.Store.fetchAlerts(
+                            com.example.unzi.findalert.data.DatabaseHelper.getInstance(context).getReadableDatabase(),
+                            Alert.STATUS.ONGOING);
+
+                    if (!cursor.moveToFirst()) {
+                        cursor.close();
+                    }
+                    else {
+                        Alert a = Alert.fromCursor(cursor);
+                        View header = navigationView.getHeaderView(0);
+                        ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
+                        assert iv != null;
+                        iv.setImageResource(R.drawable.danger_alert);
+                        TextView tv = (TextView) header.findViewById(R.id.alert_name);
+                        tv.setText(a.getName() + " - " + a.getType());
+                        TextView tv2 = (TextView) header.findViewById(R.id.description);
+                        tv2.setText(a.getDescription());
+                        Button b = (Button) header.findViewById(R.id.see_alert);
+                        b.setVisibility(View.VISIBLE);
+                        b.setOnClickListener(new View.OnClickListener() {
+                            @Override
+                            public void onClick(View v) {
+                                context.startActivity(new Intent(context, AlertActivity.class));
+                            }
+                        });
+                        MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
+                        mi.setIcon(R.drawable.green_circle);
+                        mi.setTitle("Stop");
+                    }
+                }
+                else if (Constants.ONGOING_ALERT == 0) {
+                    MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
+                    mi.setIcon(R.drawable.red_circle);
+                    mi.setTitle("Start");
+                }
+                if (Constants.MANUALLY_STARTED) {
+                    MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
+                    mi.setIcon(R.drawable.green_circle);
+                    mi.setTitle("Stop");
+                }
+                if (Constants.MANUALLY_STOPPED) {
+                    MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
+                    mi.setIcon(R.drawable.red_circle);
+                    mi.setTitle("Start");
+                }
+            }
+        });
     }
 }

@@ -14,10 +14,10 @@ public class Constants {
     public static final int GET_ANSWERED_OPTION_REQUEST_CODE = 5;
     public static final int POST_MESSAGE_REQUEST_CODE = 6;
 
-    // alerts
-    public static boolean ONGOING_ALERT = false;
+    // ongoing alert, 0 - false, 1 - schedule, 2 - ongoing
+    public static int ONGOING_ALERT = 0;
 
-    // platform manually started
+    // platform manually started/stopped
     public static boolean MANUALLY_STARTED = false;
     public static boolean MANUALLY_STOPPED = false;
 
