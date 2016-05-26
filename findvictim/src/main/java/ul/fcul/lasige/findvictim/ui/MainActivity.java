@@ -895,6 +895,7 @@ public class MainActivity extends AppCompatActivity implements
         Polygon polyline = googleMap.addPolygon(rectOptions);
         polyline.setZIndex(100);
 
+        LatLng focus = midPoint(mAlert.getLatStart(),  mAlert.getLonStart(),mAlert.getLatEnd(), mAlert.getLonEnd() );
         LatLngBounds lngBounds= new LatLngBounds(new LatLng(mAlert.getLatEnd(), mAlert.getLonEnd()),new LatLng(mAlert.getLatStart(), mAlert.getLonStart()));
         googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(lngBounds, 400,600,0));
     }
