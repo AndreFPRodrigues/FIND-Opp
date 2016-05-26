@@ -52,6 +52,8 @@ import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.LatLngBounds;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
 
@@ -100,6 +102,8 @@ public class MainActivity extends AppCompatActivity implements
     private static SQLiteDatabase mDb;
     // voice commands
     private TextToSpeech tts;
+    // navigation drawer
+    private static NavigationView navigationView;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -566,12 +570,36 @@ public class MainActivity extends AppCompatActivity implements
                     }
                 }
                 else {
-                    item.setTitle("Stop");
-                    item.setIcon(R.drawable.green_circle);
-                    mSensors.activateSensors(true);
-                    Constants.MANUALLY_STARTED = true;
-                    Constants.MANUALLY_STOPPED = false;
-                    Toast.makeText(getApplicationContext(), "Started", Toast.LENGTH_SHORT).show();
+                    if (Constants.ONGOING_ALERT == 0) {
+                        AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
+                        b.setTitle("Start Services");
+                        b.setMessage("There is no ongoing alert. Do you really want to start the services?");
+                        b.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+                                item.setTitle("Stop");
+                                item.setIcon(R.drawable.green_circle);
+                                mSensors.activateSensors(true);
+                                Constants.MANUALLY_STARTED = true;
+                                Constants.MANUALLY_STOPPED = false;
+                                Toast.makeText(getApplicationContext(), "Started", Toast.LENGTH_SHORT).show();
+                            }
+                        });
+                        b.setNegativeButton("No", new DialogInterface.OnClickListener() {
+                            @Override
+                            public void onClick(DialogInterface dialog, int which) {
+
+                            }
+                        });
+                        b.show();
+                    } else {
+                        item.setTitle("Stop");
+                        item.setIcon(R.drawable.green_circle);
+                        mSensors.activateSensors(true);
+                        Constants.MANUALLY_STARTED = true;
+                        Constants.MANUALLY_STOPPED = false;
+                        Toast.makeText(getApplicationContext(), "Started", Toast.LENGTH_SHORT).show();
+                    }
                 }
             }
         /*} else if (id == R.id.nav_sos) {
@@ -711,8 +739,6 @@ public class MainActivity extends AppCompatActivity implements
                 Log.d(TAG, "Images folder created successfully");
     }
 
-    static NavigationView navigationView;
-
     private DrawerLayout setNavigationDrawer () {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
@@ -756,6 +782,13 @@ public class MainActivity extends AppCompatActivity implements
         }
         else
             mapFragment.getMapAsync(this);
+
+        googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
+            @Override
+            public boolean onMarkerClick(Marker marker) {
+                return true;
+            }
+        });
     }
 
     /**
@@ -800,7 +833,6 @@ public class MainActivity extends AppCompatActivity implements
                         i.putExtra("knownLocation", true);
                         i.putExtra("isInside", true);
                         i.putExtra("Alert", a);
-                        Toast.makeText(MainActivity.this, "ola", Toast.LENGTH_SHORT).show();
                         startActivity(i);
                     }
                 });
@@ -841,13 +873,6 @@ public class MainActivity extends AppCompatActivity implements
                 setAlertBounds(a);
             }
         }
-        else if (Constants.ONGOING_ALERT == 0) {
-            MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
-            mi.setIcon(R.drawable.red_circle);
-            mi.setTitle("Start");
-            Constants.MANUALLY_STARTED = false;
-            Constants.MANUALLY_STOPPED = false;
-        }
         if (Constants.MANUALLY_STARTED) {
             MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
             mi.setIcon(R.drawable.green_circle);
@@ -869,6 +894,26 @@ public class MainActivity extends AppCompatActivity implements
 
         Polygon polyline = googleMap.addPolygon(rectOptions);
         polyline.setZIndex(100);
+
+        LatLngBounds lngBounds= new LatLngBounds(new LatLng(mAlert.getLatEnd(), mAlert.getLonEnd()),new LatLng(mAlert.getLatStart(), mAlert.getLonStart()));
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(lngBounds, 400,600,0));
+    }
+
+    private LatLng midPoint(double lat1,double lon1,double lat2,double lon2){
+
+        double dLon = Math.toRadians(lon2 - lon1);
+
+        //convert to radians
+        lat1 = Math.toRadians(lat1);
+        lat2 = Math.toRadians(lat2);
+        lon1 = Math.toRadians(lon1);
+
+        double Bx = Math.cos(lat2) * Math.cos(dLon);
+        double By = Math.cos(lat2) * Math.sin(dLon);
+        double lat3 = Math.atan2(Math.sin(lat1) + Math.sin(lat2), Math.sqrt((Math.cos(lat1) + Bx) * (Math.cos(lat1) + Bx) + By * By));
+        double lon3 = lon1 + Math.atan2(By, Math.cos(lat1) + Bx);
+
+        return new LatLng(Math.toDegrees(lat3), Math.toDegrees(lon3));
     }
 }
 

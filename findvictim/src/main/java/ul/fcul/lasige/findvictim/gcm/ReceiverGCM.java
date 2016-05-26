@@ -1,13 +1,21 @@
 package ul.fcul.lasige.findvictim.gcm;
 
+import android.app.Activity;
 import android.app.NotificationManager;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.database.Cursor;
 import android.graphics.Color;
 import android.os.Build;
+import android.support.design.widget.NavigationView;
 import android.support.v4.app.NotificationCompat;
 import android.support.v4.app.TaskStackBuilder;
+import android.view.View;
+import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.TextView;
+import android.widget.Toast;
 
 import com.example.unzi.findalert.data.Alert;
 import com.example.unzi.findalert.interfaces.OnAlert;
@@ -15,6 +23,7 @@ import com.example.unzi.findalert.interfaces.OnRegisterComplete;
 import com.example.unzi.findalert.ui.AlertActivity;
 import com.example.unzi.findalert.ui.RegisterInFind;
 
+import ul.fcul.lasige.findvictim.R;
 import ul.fcul.lasige.findvictim.app.Constants;
 import ul.fcul.lasige.findvictim.app.VictimApp;
 import ul.fcul.lasige.findvictim.ui.MainActivity;
@@ -38,6 +47,7 @@ public class ReceiverGCM implements OnAlert, OnRegisterComplete {
         mAlert=alert;
         if (Constants.ONGOING_ALERT != 2)
             Constants.ONGOING_ALERT = 1;
+
     }
 
     @Override
@@ -46,6 +56,8 @@ public class ReceiverGCM implements OnAlert, OnRegisterComplete {
         VictimApp app = (VictimApp) mContext.getApplicationContext();
         app.starSensors();
         Constants.ONGOING_ALERT = 2;
+        Constants.MANUALLY_STARTED = false;
+        Constants.MANUALLY_STOPPED = false;
     }
 
     @Override
@@ -55,6 +67,8 @@ public class ReceiverGCM implements OnAlert, OnRegisterComplete {
         VictimApp app = (VictimApp) mContext.getApplicationContext();
         app.stopSensors();
         Constants.ONGOING_ALERT = 0;
+        Constants.MANUALLY_STARTED = false;
+        Constants.MANUALLY_STOPPED = false;
     }
 
     @Override

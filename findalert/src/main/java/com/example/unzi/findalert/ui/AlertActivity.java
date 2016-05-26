@@ -154,7 +154,7 @@ public class AlertActivity extends FragmentActivity  {
 
         LatLng focus = midPoint(mAlert.getLatStart(),  mAlert.getLonStart(),mAlert.getLatEnd(), mAlert.getLonEnd() );
         LatLngBounds lngBounds= new LatLngBounds(new LatLng(mAlert.getLatEnd(), mAlert.getLonEnd()),new LatLng(mAlert.getLatStart(), mAlert.getLonStart()));
-        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(lngBounds, 200,400,0));
+        mMap.moveCamera(CameraUpdateFactory.newLatLngBounds(lngBounds, 400,600,0));
 
         /*mMap.moveCamera(CameraUpdateFactory.newLatLng(focus));
         mMap.animateCamera(CameraUpdateFactory.zoomTo(11));*/

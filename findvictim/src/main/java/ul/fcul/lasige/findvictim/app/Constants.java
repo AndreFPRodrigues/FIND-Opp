@@ -1,5 +1,6 @@
 package ul.fcul.lasige.findvictim.app;
 
+import android.content.Context;
 import android.os.Environment;
 
 public class Constants {
