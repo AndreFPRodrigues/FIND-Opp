@@ -55,4 +55,8 @@ public class SyncFindRestClient {
         else
             return BASE_URL + relativeUrl;
     }
+
+    public static void getCustom(String url, RequestParams params, AsyncHttpResponseHandler responseHandler) {
+        client.get(getAbsoluteUrl(url), params, responseHandler);
+    }
 }

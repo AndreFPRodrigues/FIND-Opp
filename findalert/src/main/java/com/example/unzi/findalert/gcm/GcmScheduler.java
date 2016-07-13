@@ -60,7 +60,8 @@ public class GcmScheduler {
 
     public void scheduleAlarm(Context context, Alert alert) {
         WebLogging.logMessage(context, "scheduled alert", DeviceUtils.getWifiMacAddress(), "FindVictim");
-
+        Alert.Store.updateAlertStatus(DatabaseHelper.getInstance(context).getWritableDatabase(),
+                alert.getAlertID(), Alert.STATUS.SCHEDULED);
         // schedule start alarm
         Intent startIntent = new Intent(context, GcmSchedulerReceiver.class);
         startIntent.setAction(ACTION_SCHEDULE_START);
@@ -124,6 +125,8 @@ public class GcmScheduler {
                 }
                 resultIntent.putExtra("knownLocation",true);
                 resultIntent.putExtra("isInside",true);
+                //send alert received
+                RegisterInFind.sharedInstance(context).receivedAlert(alert, true);
                 break;
             case UNKNOWN:
                 mBuilder = new NotificationCompat.Builder(context)
@@ -139,7 +142,7 @@ public class GcmScheduler {
                 mBuilder = new NotificationCompat.Builder(context)
                         .setSmallIcon(R.drawable.warning_notification_g)
                         .setContentTitle(title)
-                        .setContentText(alert.getDescription());
+                        .setContentText("Alert ignored, not inside area.");
                 if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                     mBuilder.setColor(Color.GREEN);
                 }

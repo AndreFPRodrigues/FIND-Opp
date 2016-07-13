@@ -34,7 +34,7 @@ public class Alert implements Serializable {
     protected String mLatEnd;
     protected String mLonEnd;
 
-    public enum STATUS { SCHEDULED, ONGOING, STOPPED };
+    public enum STATUS { RECEIVED,SCHEDULED, ONGOING, STOPPED };
     public enum DANGER { NOT_IN_LOCATION, UNKNOWN, IN_LOCATION };
 
     private STATUS mStatus;
@@ -155,6 +155,19 @@ public class Alert implements Serializable {
                     null,
                     null,
                     COLUMN_DATE);
+        }
+
+        /* update methods */
+        public static Cursor fetchAlert(SQLiteDatabase db, int alertID) {
+            if (db == null) {
+                Log.d(TAG, "Database is null");
+                return null;
+            }
+            Cursor cur = db.rawQuery("select * from " +TABLE_NAME+ " where " +COLUMN_ALERT_ID +"  = ?", new String[] { String.valueOf(alertID) });
+            if (cur.moveToNext()) {
+                return cur;
+            }
+           return null;
         }
 
         /* delete methods */

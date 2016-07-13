@@ -201,6 +201,7 @@ public class PacketCommManager implements NeighborObserver.NeighborCallback, Pac
             if (target != null) {
                 // it is! send it
                 PacketSenderService.startSendPacket(mContext, target.getRawId(), packetId);
+
             }
         }
         else {

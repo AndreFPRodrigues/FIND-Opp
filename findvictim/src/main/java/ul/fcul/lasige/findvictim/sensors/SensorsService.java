@@ -1,13 +1,11 @@
 package ul.fcul.lasige.findvictim.sensors;
 
-import android.app.Activity;
 import android.app.Service;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.ServiceConnection;
-import android.graphics.Color;
 import android.net.Uri;
 import android.os.Binder;
 import android.os.Handler;
@@ -19,11 +17,7 @@ import android.util.Base64;
 import android.util.Log;
 
 import com.example.unzi.findalert.ui.RegisterInFind;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.LatLng;
-import com.google.android.gms.maps.model.PolylineOptions;
 
-import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -42,13 +36,12 @@ import ul.fcul.lasige.find.lib.data.PacketObserver;
 import ul.fcul.lasige.find.lib.service.FindConnector;
 import ul.fcul.lasige.findvictim.R;
 import ul.fcul.lasige.findvictim.app.PostMessage;
-import ul.fcul.lasige.findvictim.app.Route;
+import ul.fcul.lasige.findvictim.data.DatabaseHelper;
 import ul.fcul.lasige.findvictim.data.Message;
 import ul.fcul.lasige.findvictim.data.MessageGenerator;
 import ul.fcul.lasige.findvictim.data.TokenStore;
 import ul.fcul.lasige.findvictim.gcm.ReceiverGCM;
 import ul.fcul.lasige.findvictim.network.ConnectivityChangeReceiver;
-import ul.fcul.lasige.findvictim.ui.MainActivity;
 import ul.fcul.lasige.findvictim.utils.DeviceUtils;
 import ul.fcul.lasige.findvictim.utils.NetworkUtils;
 import ul.fcul.lasige.findvictim.webservices.RequestServer;
@@ -122,6 +115,7 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
         final Intent bindIntent = new Intent(context, SensorsService.class);
         return context.bindService(bindIntent, connection, Context.BIND_AUTO_CREATE);
     }
+
 
     public interface Callback {
         void onActivationStateChanged(boolean activated);
@@ -363,8 +357,9 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
     private void startSendingMessages() {
         // start generating messages
         mAsyncExecutorService = Executors.newScheduledThreadPool(2);
+        MessageGenerator generator = MessageGenerator.getSharedInstance();
         mAsyncExecutorService.scheduleAtFixedRate(
-                new MessageGenerator.GenerateMessageTask(getApplicationContext(), mSensorManager, this),
+                generator.startMessageGenaration(getApplicationContext(), mSensorManager, this),
                 30, 60, TimeUnit.SECONDS);
     }
 
@@ -379,6 +374,7 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
         Log.d(TAG, "Sending message ...");
         Log.d(TAG, "Battery level: " + message.BatteryLevel);
         Log.d(TAG, "Location Lat: " + message.LocationLatitude + " Lon: " + message.LocationLongitude + " Acc: " + message.LocationAccuracy + " Time: " + message.LocationTimestamp);
+        Log.d(TAG, "timestamp level: " + message.TimeSent);
 
         // if it is the first time we have location
       /*  if (TokenStore.isFirstLocation(getApplicationContext()) && !mManualStart) {
@@ -420,6 +416,8 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
             // enqueue packet
             try {
                 String protocol = mConnector.getProtocolToken("ul.fcul.lasige.findvictim");
+                Log.d(TAG, "Enqueued message: " + message.getJSON().toString());
+
                 mConnector.enqueuePacket(protocol, message.getJSON().toString().getBytes("UTF-8"));
 
                 // try to connect to current neighbors
@@ -552,99 +550,40 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
 
     @Override
     public void onPacketReceived(Packet packet, Uri ui) {
-
-        String routesProtocol = mConnector.getProtocolToken("ul.fcul.lasige.routes");
         String victimProtocol = mConnector.getProtocolToken("ul.fcul.lasige.findvictim");
+        String data1 = new String(packet.getData());
+        Log.d(TAG, "Packet Received:::" + data1);
 
-        if (routesProtocol.equals(ui.getQueryParameters("protocol_token").get(0))) {
-            //do something with packet
-            final String data = new String(packet.getData());
-            Log.d(TAG, "Packet routes:::" + data);
-            ((Activity) mainContext).runOnUiThread(new Runnable() {
-                @Override
-                public void run() {
-                    GoogleMap googleMap = MainActivity.getGoogleMaps();
-                    try {
-                        JSONArray json = new JSONArray(data);
-                        Log.d(TAG, "JSON SIZE " + json.length());
-
-                        for (int i = 0 ; i < json.length() ; i++) {
-                            JSONObject o = json.getJSONObject(i);
-                            googleMap.addPolyline(new PolylineOptions()
-                                    .add(new LatLng(o.getDouble("start_lat"), o.getDouble("start_lng")), new LatLng(o.getDouble("end_lat"), o.getDouble("end_lng")))
-                                    .width(7)
-                                    .color(Color.BLUE))
-                                    .setZIndex(100);
-                            /*Route r = new Route();
-                            r.start_lat = o.getDouble("start_lat");
-                            r.end_lat = o.getDouble("end_lat");
-                            r.start_lng = o.getDouble("start_lng");
-                            r.end_lng = o.getDouble("end_lng");
-                            long currentTime = System.currentTimeMillis() / 1000L;
-                            r.timeReceived = currentTime;
-                            r.timeSent = currentTime;
-
-                            Route.Store.addRoute(MainActivity.getDB(), r);*/
-                        }
-                    } catch (JSONException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });
-        } else {
             if (victimProtocol.equals(ui.getQueryParameters("protocol_token").get(0))) {
                 //do something with packet
                 String data = new String(packet.getData());
-                Log.d(TAG, "Packet victim:::" + data);
                 try {
                     JSONObject json = new JSONObject(data);
-                    if (!json.get("textMessage").equals("")) {
-                        PostMessage newMsg = new PostMessage();
-                        if (json.get("isVictim").equals("1")) {
-                            newMsg.sender = "Victim";
-                            newMsg.sender_type = "Victim";
-                        }
-                        else {
-                            newMsg.sender = "Rescuer";
-                            newMsg.sender_type = "Rescuer";
-                        }
-                        newMsg.content = (String) json.get("textMessage");
+                    if(json.has("Message")){
+                        if (!json.get("Message").equals("")) {
+                            PostMessage newMsg = new PostMessage();
+                            if (json.get("isVictim").equals("1")) {
+                                newMsg.sender = "Other";
+                                newMsg.sender_type = "";
+                            }
+                            else {
+                                newMsg.sender = "Rescuer";
+                                newMsg.sender_type = "Rescuer";
+                            }
+                            newMsg.content = (String) json.get("Message");
 
-                        long currentTime = System.currentTimeMillis() / 1000L;
-                        newMsg.timeSent = (long) json.get("timestamp");
-                        newMsg.timeReceived = currentTime;
-
-                        PostMessage.Store.addMessage(MainActivity.getDB(), newMsg);
-                    }
-                    /*
-                    if (json.get("routes") != null) {
-                        JSONArray array = json.getJSONArray("routes");
-                        Log.d(TAG, "JSON SIZE " + array.length());
-                        GoogleMap googleMap = MainActivity.getGoogleMaps();
-                        for (int i = 0 ; i < array.length() ; i++) {
-                            JSONObject o = array.getJSONObject(i);
-                            googleMap.addPolyline(new PolylineOptions()
-                                    .add(new LatLng(o.getDouble("start_lat"), o.getDouble("start_lng")), new LatLng(o.getDouble("end_lat"), o.getDouble("end_lng")))
-                                    .width(7)
-                                    .color(Color.BLUE))
-                                    .setZIndex(100);
-                            Route r = new Route();
-                            r.start_lat = o.getDouble("start_lat");
-                            r.end_lat = o.getDouble("end_lat");
-                            r.start_lng = o.getDouble("start_lng");
-                            r.end_lng = o.getDouble("end_lng");
                             long currentTime = System.currentTimeMillis() / 1000L;
-                            r.timeReceived = currentTime;
-                            r.timeSent = currentTime;
+                            newMsg.timeSent = (long) json.get("timestamp")/1000;
+                            newMsg.timeReceived = currentTime;
 
-                            Route.Store.addRoute(MainActivity.getDB(), r);
+                            PostMessage.Store.addMessage(DatabaseHelper.getInstance(this).getWritableDatabase(), newMsg);
                         }
-                    }*/
+                    }
+
 
                 } catch (JSONException e) {
                     e.printStackTrace();
                 }
-            }
         }
     }
 

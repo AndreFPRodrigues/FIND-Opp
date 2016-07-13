@@ -29,7 +29,7 @@
     <application
         android:name=".app.VictimApp"
         android:allowBackup="true"
-        android:icon="@drawable/victim"
+        android:icon="@drawable/find_victim"
         android:label="@string/app_name"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
@@ -136,7 +136,7 @@
         -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
-            android:value="@string/google_maps_key" />
+            android:value="@string/mapsVictim" />
 
     </application>
 

@@ -22,7 +22,7 @@ public class DownloadFile {
 
     static double downloadedSize = 0;
     static double totalSize = 0;
-    static String download_file_path = "http://accessible-serv.lasige.di.fc.ul.pt/~lost/LostMap/world.sqlitedb";
+    static String download_file_path = "http://accessible-serv.lasige.di.fc.ul.pt/~lost/LostMap/creta.sqlitedb";
 
     public static boolean getMapDatabase(final Context context) {
 

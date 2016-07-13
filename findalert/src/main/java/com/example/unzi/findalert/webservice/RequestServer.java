@@ -5,6 +5,9 @@ import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
+import com.example.unzi.findalert.data.Alert;
+import com.example.unzi.findalert.data.DatabaseHelper;
+import com.example.unzi.findalert.data.Route;
 import com.example.unzi.findalert.data.TokenStore;
 import com.example.unzi.findalert.utils.DeviceUtils;
 import com.example.unzi.offlinemaps.DownloadFile;
@@ -172,5 +175,43 @@ public class RequestServer {
         // Notify UI that registration has finished
         Intent registrationComplete = new Intent(TokenStore.KEY_REGISTRATION_COMPLETE);
         LocalBroadcastManager.getInstance(context).sendBroadcast(registrationComplete);
+    }
+
+    public static void downloadRoutes(final Context c, double latStart, double lngStart, double latEnd, double lngEnd) {
+        RequestParams requestParams = new RequestParams();
+        requestParams.put("minLat", latStart);
+        requestParams.put("minLng", lngStart);
+        requestParams.put("maxLat", latEnd);
+        requestParams.put("maxLng", lngEnd);
+
+        String url="http://accessible-serv.lasige.di.fc.ul.pt/~lost/FindRoutes/index.php/sections";
+        SyncFindRestClient.getCustom(url,requestParams ,new JsonHttpResponseHandler() {
+
+            @Override
+            public void onSuccess(int statusCode, Header[] headers, JSONArray jsonArray) {
+                try {
+                    for(int i=0; i<jsonArray.length(); i++){
+                        JSONObject section = jsonArray.getJSONObject(i);
+                        //todo timestamp for routes if we want to add updates, we should also save id from the route/section in the future
+                        Route route = new Route(section.getDouble("startLat"),section.getDouble("endLat"),section.getDouble("startLng"),section.getDouble("endLng"),0 );
+                        Route.Store.addRoute(DatabaseHelper.getInstance(c).getWritableDatabase(), route);
+                        Log.d(TAG, "JSON ROUTES:" + section.toString(2));
+                    }
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, Throwable error, JSONArray jsonArray) {
+                Log.d(TAG, "Failure get routes");
+            }
+
+            @Override
+            public void onFailure(int statusCode, Header[] headers, String str, Throwable throwable) {
+                Log.d(TAG, "Failure on get endpoint, code: " + statusCode + ", response: " + str);
+            }
+        });
     }
 }

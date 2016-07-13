@@ -117,7 +117,7 @@ public class MyGcmListenerService extends GcmListenerService {
             return;
 
         // store alert (persistently)
-        Alert alert = new Alert(name, description,type, alertID, date, duration, latS, lonS, latE, lonE, Alert.STATUS.SCHEDULED);
+        Alert alert = new Alert(name, description,type, alertID, date, duration, latS, lonS, latE, lonE, Alert.STATUS.RECEIVED);
         Alert.Store.addAlert(DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(), alert);
 
         // schedule start

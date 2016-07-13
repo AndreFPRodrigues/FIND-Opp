@@ -1,7 +1,7 @@
 package ul.fcul.lasige.findvictim.ui;
 
 import android.app.AlertDialog;
-import android.content.BroadcastReceiver;
+import android.app.NotificationManager;
 import android.content.ComponentName;
 import android.content.Context;
 import android.content.DialogInterface;
@@ -11,8 +11,6 @@ import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.graphics.Color;
 import android.graphics.PorterDuff;
-import android.location.Location;
-import android.location.LocationListener;
 import android.media.AudioManager;
 import android.media.MediaRecorder;
 import android.net.Uri;
@@ -37,28 +35,28 @@ import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.Button;
 import android.widget.EditText;
-import android.widget.ImageView;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.unzi.findalert.data.Alert;
-import com.example.unzi.findalert.ui.AlertActivity;
+import com.example.unzi.findalert.data.Route;
 import com.example.unzi.findalert.ui.RegisterInFind;
 import com.example.unzi.offlinemaps.TilesProvider;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.LatLngBounds;
 import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.Polygon;
 import com.google.android.gms.maps.model.PolygonOptions;
+import com.google.android.gms.maps.model.Polyline;
+import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
@@ -66,6 +64,7 @@ import ul.fcul.lasige.findvictim.R;
 import ul.fcul.lasige.findvictim.app.Constants;
 import ul.fcul.lasige.findvictim.app.PostMessage;
 import ul.fcul.lasige.findvictim.data.DatabaseHelper;
+import ul.fcul.lasige.findvictim.data.MessageGenerator;
 import ul.fcul.lasige.findvictim.sensors.SensorsService;
 
 import static android.support.design.widget.NavigationView.OnNavigationItemSelectedListener;
@@ -73,26 +72,18 @@ import static ul.fcul.lasige.findvictim.sensors.SensorsService.Callback;
 import static ul.fcul.lasige.findvictim.sensors.SensorsService.startSensorsService;
 
 public class MainActivity extends AppCompatActivity implements
-        Callback,
-        OnNavigationItemSelectedListener,
-        OnMapReadyCallback,
-        LocationListener {
+        Callback,OnNavigationItemSelectedListener {
 
     // debug
     private static final String TAG = MainActivity.class.getSimpleName();
-    // gcm
-    private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
-    private BroadcastReceiver mRegistrationBroadcastReceiver;
-    // server registration
-    private String mGoogleAccount;
+
     // sensor service
     private ServiceConnection mSensorsConnection;
     private SensorsService mSensors;
-    // ui
-    private View.OnClickListener mOnTryAgainListener;
+
     // maps
     private static GoogleMap googleMap;
-    private boolean marker;
+
     // record voice message
     private boolean recordOn;
     private MediaRecorder recorder;
@@ -103,19 +94,30 @@ public class MainActivity extends AppCompatActivity implements
     // voice commands
     private TextToSpeech tts;
     // navigation drawer
-    private static NavigationView navigationView;
+    private  NavigationView navigationView;
+    // double click timestamp
+    private long timestamp;
 
+    //alert borders
+    private  Polygon mAlertBorders;
+    private ArrayList<Polyline> mRoutes;
+
+
+    private TilesProvider mTileProvider;
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        Log.d(TAG, "On create main activity");
         // set view
         setContentView(R.layout.activity_main_app);
+        navigationView = (NavigationView) findViewById(R.id.nav_view);
+        mRoutes = new ArrayList<Polyline>();
+
         // set layout to fullscreen
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN, WindowManager.LayoutParams.FLAG_FULLSCREEN);
         // set volume to type music
         setVolumeControlStream(AudioManager.STREAM_MUSIC);
-        // set navigation drawer
-        setNavigationDrawer();
         //create app folders
         createFolders();
         // start sensor service
@@ -125,7 +127,9 @@ public class MainActivity extends AppCompatActivity implements
         // start database
         initDB();
         // check for alerts
-        checkAlert();
+        //checkAlert();
+
+
     }
 
     @Override
@@ -143,6 +147,8 @@ public class MainActivity extends AppCompatActivity implements
                 final SensorsService.SensorsBinder binder = (SensorsService.SensorsBinder) service;
                 mSensors = binder.getSensors();
                 mSensors.addCallback(MainActivity.this);
+                // set navigation drawer
+                setNavigationDrawer();
             }
         };
         bindService(new Intent(this, SensorsService.class), mSensorsConnection, BIND_AUTO_CREATE);
@@ -150,9 +156,17 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onResume() {
+        Log.d(TAG, "On resume main activity");
+
         //Make sure we have registered the app and downloaded the map
         RegisterInFind findRegister = RegisterInFind.sharedInstance(this);
         findRegister.register();
+        initMaps();
+        checkAlert();
+        if(mSensors!=null){
+            updatePlatformStatus();
+        }
+
         super.onResume();
     }
 
@@ -164,7 +178,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     protected void onStop() {
         super.onStop();
-        if(mSensors != null) {
+        if (mSensors != null) {
             mSensors.removeCallback(this);
         }
         // unbind from sensor service
@@ -177,7 +191,8 @@ public class MainActivity extends AppCompatActivity implements
      */
     @Override
     public void onBackPressed() {
-        if (Constants.ONGOING_ALERT == 2) {
+        super.onBackPressed();
+        /*if (Constants.ONGOING_ALERT == 2) {
             AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
             b.setTitle("Exit Application");
             b.setMessage("If you really want to exit the application, please avoid spending unnecessary battery. Exit anyway?");
@@ -194,11 +209,16 @@ public class MainActivity extends AppCompatActivity implements
                 }
             });
             b.show();
-        }
-        else
-            super.onBackPressed();
+        } else
+            super.onBackPressed();*/
     }
 
+    //cancel permanent alert notification
+    private void cancelNotification(){
+        NotificationManager mNotificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        mNotificationManager.cancel(2);
+    }
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         switch (requestCode) {
@@ -207,7 +227,7 @@ public class MainActivity extends AppCompatActivity implements
                     Intent i = new Intent(this, ImagePaintActivity.class);
                     startActivityForResult(i, Constants.SEND_FILE_REQUEST_CODE);
                 }
-            break;
+                break;
             case Constants.ASK_REACH_PHONE_REQUEST_CODE:
                 if (resultCode == RESULT_OK) {
                     List<String> results = data.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS);
@@ -331,8 +351,7 @@ public class MainActivity extends AppCompatActivity implements
                             }
 
                             recorder.start();
-                        }
-                        else if(spokenText.contains("two")) {
+                        } else if (spokenText.contains("two")) {
                             tts = new TextToSpeech(getApplicationContext(), new TextToSpeech.OnInitListener() {
                                 @Override
                                 public void onInit(int status) {
@@ -361,8 +380,8 @@ public class MainActivity extends AppCompatActivity implements
 
                     if (!spokenText.equals("")) {
                         PostMessage newMsg = new PostMessage();
-                        newMsg.sender = "Me Myself and I";
-                        newMsg.sender_type = "Rescuer";
+                        newMsg.sender = "Me";
+                        newMsg.sender_type = "";
                         newMsg.content = spokenText;
 
                         long currentTime = System.currentTimeMillis() / 1000L;
@@ -405,10 +424,14 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     public boolean onOptionsItemSelected(final MenuItem item) {
-
+       //downloaded all maps for crete
+        /* if(mTileProvider!=null) {
+            mTileProvider.downloadTilesInBound(35.377589, 24.450248, 35.3447841, 24.4948556, 1, 16, getApplicationContext());
+            return true;
+        }*/
         int id = item.getItemId();
 
-        if(id == R.id.menu_victim_record && !recordOn){
+        if (id == R.id.menu_victim_record && !recordOn) {
             item.setIcon(R.drawable.ic_mic_none_white_48dp);
             recordOn = true;
             Vibrator v = (Vibrator) getSystemService(Context.VIBRATOR_SERVICE);
@@ -422,7 +445,7 @@ public class MainActivity extends AppCompatActivity implements
             recorder.setMaxDuration(1000 * 20);
 
             AlertDialog.Builder builder = new AlertDialog.Builder(this);
-                builder.setIcon(R.drawable.ic_mic_none_black_48dp)
+            builder.setIcon(R.drawable.ic_mic_none_black_48dp)
                     .setTitle("Voice Message")
                     .setMessage("Speak now to send a voice message. 20 seconds remaining")
                     .setNeutralButton("Stop", new DialogInterface.OnClickListener() {
@@ -464,7 +487,7 @@ public class MainActivity extends AppCompatActivity implements
             new CountDownTimer(20000, 1000) {
                 @Override
                 public void onTick(long millisUntilFinished) {
-                    dlg.setMessage("Speak now to send a voice message. " + (millisUntilFinished/1000) + " seconds remaining");
+                    dlg.setMessage("Speak now to send a voice message. " + (millisUntilFinished / 1000) + " seconds remaining");
                 }
 
                 @Override
@@ -522,7 +545,7 @@ public class MainActivity extends AppCompatActivity implements
 
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_settings) {
-            return true;
+
         }
 
         return super.onOptionsItemSelected(item);
@@ -532,82 +555,57 @@ public class MainActivity extends AppCompatActivity implements
     public boolean onNavigationItemSelected(final MenuItem item) {
 
         int id = item.getItemId();
-
         if (id == R.id.toggleButton) {
             if(mSensors != null) {
-                if(mSensors.isActivated()) {
-                    // turn off
-                    if (Constants.ONGOING_ALERT == 2) {
-                        AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
-                        b.setTitle("Stop Services");
-                        b.setMessage("There's an ongoing alert. Do you really want to stop the services?");
-                        b.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                item.setTitle("Start");
-                                item.setIcon(R.drawable.red_circle);
-                                mSensors.deactivateSensors();
-                                Constants.MANUALLY_STOPPED = true;
-                                Constants.MANUALLY_STARTED = false;
-                                Toast.makeText(getApplicationContext(), "Stopped", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        b.setNegativeButton("No", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
 
-                            }
-                        });
-                        b.show();
+                long aux = System.currentTimeMillis();
+                if (aux - timestamp < 1000) {
+
+                    if(mSensors.isActivated()) {
+                        // turn off
+                            AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
+                            b.setTitle("Stop Services");
+                            b.setMessage("Do you really want to stop the services?");
+                            b.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+                                    item.setTitle("Idle");
+                                    item.setIcon(R.drawable.stop);
+                                    mSensors.deactivateSensors();
+                                    Constants.MANUALLY_STOPPED = true;
+                                    Constants.MANUALLY_STARTED = false;
+                                    Toast.makeText(getApplicationContext(), "Stopped", Toast.LENGTH_SHORT).show();
+                                    cancelNotification();
+
+                                }
+                            });
+                            b.setNegativeButton("No", new DialogInterface.OnClickListener() {
+                                @Override
+                                public void onClick(DialogInterface dialog, int which) {
+
+                                }
+                            });
+                            b.show();
+
                     }
                     else {
-                        item.setTitle("Start");
-                        item.setIcon(R.drawable.red_circle);
-                        mSensors.deactivateSensors();
-                        Constants.MANUALLY_STOPPED = true;
-                        Constants.MANUALLY_STARTED = false;
-                        Toast.makeText(getApplicationContext(), "Stopped", Toast.LENGTH_SHORT).show();
-                    }
-                }
-                else {
-                    if (Constants.ONGOING_ALERT == 0) {
-                        AlertDialog.Builder b = new AlertDialog.Builder(MainActivity.this);
-                        b.setTitle("Start Services");
-                        b.setMessage("There is no ongoing alert. Do you really want to start the services?");
-                        b.setPositiveButton("Yes", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
-                                item.setTitle("Stop");
-                                item.setIcon(R.drawable.green_circle);
-                                mSensors.activateSensors(true);
-                                Constants.MANUALLY_STARTED = true;
-                                Constants.MANUALLY_STOPPED = false;
-                                Toast.makeText(getApplicationContext(), "Started", Toast.LENGTH_SHORT).show();
-                            }
-                        });
-                        b.setNegativeButton("No", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
 
-                            }
-                        });
-                        b.show();
-                    } else {
-                        item.setTitle("Stop");
-                        item.setIcon(R.drawable.green_circle);
+                        item.setTitle("Running...");
+                        item.setIcon(R.drawable.running);
                         mSensors.activateSensors(true);
                         Constants.MANUALLY_STARTED = true;
                         Constants.MANUALLY_STOPPED = false;
                         Toast.makeText(getApplicationContext(), "Started", Toast.LENGTH_SHORT).show();
+
+
                     }
+                } else {
+                    timestamp = aux;
                 }
+                return true;
             }
-        /*} else if (id == R.id.nav_sos) {
-            Intent sos = new Intent(Intent.ACTION_CALL, Uri.parse(Constants.CALL_112));
-            if (ActivityCompat.checkSelfPermission(this, Manifest.permission.CALL_PHONE) == PackageManager.PERMISSION_GRANTED) {
-                startActivity(sos);
-            }*/
-        } else if (id == R.id.nav_take_picture) {
+        }
+        if (id == R.id.nav_take_picture) {
             try {
                 Intent camera = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
                 File img = new File(Constants.SAVE_IMAGE);
@@ -635,15 +633,16 @@ public class MainActivity extends AppCompatActivity implements
 
                     if (!check.isEmpty()) {
                         PostMessage newMsg = new PostMessage();
-                        newMsg.sender = "Me Myself and I";
-                        newMsg.sender_type = "Victim";
+                        newMsg.sender = "Me";
+                        newMsg.sender_type = "";
                         newMsg.content = message;
 
                         long currentTime = System.currentTimeMillis() / 1000L;
                         newMsg.timeSent = currentTime;
                         newMsg.timeReceived = currentTime;
 
-                        PostMessage.Store.addMessage(mDb, newMsg);
+                        PostMessage.Store.addMessage(DatabaseHelper.getInstance(getApplicationContext()).getWritableDatabase(), newMsg);
+                        MessageGenerator.getSharedInstance().addTextMessage(message);
                         Toast.makeText(MainActivity.this, "Posted", Toast.LENGTH_SHORT).show();
                     }
                 }
@@ -679,48 +678,12 @@ public class MainActivity extends AppCompatActivity implements
         return true;
     }
 
-    @Override
-    public void onLocationChanged(Location location) {
 
-    }
-
-    @Override
-    public void onStatusChanged(String provider, int status, Bundle extras) {
-
-    }
-
-    @Override
-    public void onProviderEnabled(String provider) {
-
-    }
-
-    @Override
-    public void onProviderDisabled(String provider) {
-
-    }
-
-    @Override
-    public void onMapReady(GoogleMap maps) {
-        googleMap = maps;
-        googleMap.setMyLocationEnabled(true);
-        googleMap.setOnMyLocationChangeListener(new GoogleMap.OnMyLocationChangeListener() {
-            @Override
-            public void onMyLocationChange(Location location) {
-                LatLng location2 = new LatLng(location.getLatitude(), location.getLongitude());
-
-                if (!marker) {
-                    googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(location2, 18.0f));
-                    marker = true;
-                }
-            }
-        });
-    }
-
-    public static GoogleMap getGoogleMaps () {
+    public static GoogleMap getGoogleMaps() {
         return googleMap;
     }
 
-    private void createFolders () {
+    private void createFolders() {
         File f = new File(Constants.ROOT_FOLDER);
         if (!f.exists())
             if (f.mkdir())
@@ -739,7 +702,7 @@ public class MainActivity extends AppCompatActivity implements
                 Log.d(TAG, "Images folder created successfully");
     }
 
-    private DrawerLayout setNavigationDrawer () {
+    private DrawerLayout setNavigationDrawer() {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
 
@@ -748,7 +711,6 @@ public class MainActivity extends AppCompatActivity implements
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         toggle.syncState();
 
-        navigationView = (NavigationView) findViewById(R.id.nav_view);
         assert navigationView != null;
         navigationView.setNavigationItemSelectedListener(this);
         navigationView.setItemIconTintList(null);
@@ -758,37 +720,42 @@ public class MainActivity extends AppCompatActivity implements
         navigationView.getMenu().findItem(R.id.nav_send_msg).getIcon().setColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN);
         navigationView.getMenu().findItem(R.id.nav_msg_board).getIcon().setColorFilter(Color.BLACK, PorterDuff.Mode.SRC_IN);
 
+        updatePlatformStatus();
+
         return drawer;
     }
+
+    private void updatePlatformStatus(){
+        // /start and stop
+        if ( mSensors.isActivated()) {
+            navigationView.getMenu().findItem(R.id.toggleButton).setTitle("Running...").setIcon(R.drawable.running);
+        } else {
+            navigationView.getMenu().findItem(R.id.toggleButton).setTitle("Idle").setIcon(R.drawable.stop);
+        }
+    }
+
+
+
 
     /**
      * Initializes the sensors service
      */
-    private void initSensorsService () {
+    private void initSensorsService() {
         startSensorsService(this);
     }
 
     /**
      * Initializes the maps ans shoe the localization of the user
      */
-    private void initMaps () {
-        marker = false;
+    private void initMaps() {
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
                 .findFragmentById(R.id.victimMap);
         googleMap = mapFragment.getMap();
-        String path = getFilesDir()+ "/mapapp/world.sqlitedb";
+        String path = getFilesDir() + "/mapapp/world.sqlitedb";
         if (new File(path).exists()) {
-           new TilesProvider(googleMap, path);
+          mTileProvider=  new TilesProvider(googleMap, path);
         }
-        else
-            mapFragment.getMapAsync(this);
 
-        googleMap.setOnMarkerClickListener(new GoogleMap.OnMarkerClickListener() {
-            @Override
-            public boolean onMarkerClick(Marker marker) {
-                return true;
-            }
-        });
     }
 
     /**
@@ -799,111 +766,132 @@ public class MainActivity extends AppCompatActivity implements
         mDb = dbHelper.getWritableDatabase();
     }
 
-    public static SQLiteDatabase getDB () {
+    public static SQLiteDatabase getDB() {
         return mDb;
     }
 
-    public static NavigationView getNavigationView () {
-        return navigationView;
-    }
 
-    public void checkAlert () {
-        if (Constants.ONGOING_ALERT == 1) {
-            Cursor cursor = Alert.Store.fetchAlerts(
-                    com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
-                    Alert.STATUS.SCHEDULED);
-
-            if (!cursor.moveToFirst()) {
-                cursor.close();
-            }
-            else {
-                final Alert a = Alert.fromCursor(cursor);
-                View header = navigationView.getHeaderView(0);
-                ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
-                assert iv != null;
-                iv.setImageResource(R.drawable.danger_alert);
-                TextView tv = (TextView) header.findViewById(R.id.alert_name);
-                tv.setText(a.getName() + " - " + a.getType());
-                Button b = (Button) header.findViewById(R.id.see_alert);
-                b.setVisibility(View.VISIBLE);
-                b.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Intent i = new Intent(MainActivity.this, AlertActivity.class);
-                        i.putExtra("knownLocation", true);
-                        i.putExtra("isInside", true);
-                        i.putExtra("Alert", a);
-                        startActivity(i);
-                    }
-                });
-                setAlertBounds(a);
-            }
-        }
-        else if (Constants.ONGOING_ALERT == 2) {
-            Cursor cursor = Alert.Store.fetchAlerts(
-                    com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
-                    Alert.STATUS.ONGOING);
-
-            if (!cursor.moveToFirst()) {
-                cursor.close();
-            }
-            else {
-                final Alert a = Alert.fromCursor(cursor);
-                View header = navigationView.getHeaderView(0);
-                ImageView iv = (ImageView) header.findViewById(R.id.alert_status);
-                assert iv != null;
-                iv.setImageResource(R.drawable.danger_alert);
-                TextView tv = (TextView) header.findViewById(R.id.alert_name);
-                tv.setText(a.getName() + " - " + a.getType());
-                Button b = (Button) header.findViewById(R.id.see_alert);
-                b.setVisibility(View.VISIBLE);
-                b.setOnClickListener(new View.OnClickListener() {
-                    @Override
-                    public void onClick(View v) {
-                        Intent i = new Intent(MainActivity.this, AlertActivity.class);
-                        i.putExtra("knownLocation", true);
-                        i.putExtra("isInside", true);
-                        i.putExtra("Alert", a);
-                        startActivity(i);
-                    }
-                });
-                MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
-                mi.setIcon(R.drawable.green_circle);
-                mi.setTitle("Stop");
-                setAlertBounds(a);
-            }
-        }
-        if (Constants.MANUALLY_STARTED) {
+    public void checkAlert() {
+        Log.d(TAG,"Checking alerts");
+        Cursor cursor = Alert.Store.fetchAlerts(
+                com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
+                Alert.STATUS.ONGOING);
+        if (cursor.moveToFirst()) {
+            final Alert a = Alert.fromCursor(cursor);
+            setAlertWindow(a);
             MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
-            mi.setIcon(R.drawable.green_circle);
-            mi.setTitle("Stop");
+            mi.setTitle("Running...");
+            setAlertBounds(a);
+            setRoutes();
+            cursor.close();
+
+            return ;
         }
-        if (Constants.MANUALLY_STOPPED) {
-            MenuItem mi = navigationView.getMenu().findItem(R.id.toggleButton);
-            mi.setIcon(R.drawable.red_circle);
-            mi.setTitle("Start");
+        cursor.close();
+
+        cursor = Alert.Store.fetchAlerts(
+                com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase(),
+                Alert.STATUS.SCHEDULED);
+        if (cursor.moveToFirst()) {
+            final Alert a = Alert.fromCursor(cursor);
+            setAlertWindow(a);
+            setRoutes();
+            setAlertBounds(a);
+            cursor.close();
+            return;
         }
+        hideAlertWindow();
+        clearFinishedAlert();
+        clearRoutes();
+
     }
 
-    private void setAlertBounds (Alert mAlert) {
-        PolygonOptions rectOptions = new PolygonOptions()
-                .add(new LatLng(mAlert.getLatStart(), mAlert.getLonStart()))
-                .add(new LatLng(mAlert.getLatEnd(), mAlert.getLonStart()))
-                .add(new LatLng(mAlert.getLatEnd(), mAlert.getLonEnd()))
-                .add(new LatLng(mAlert.getLatStart(), mAlert.getLonEnd()));
-
-        Polygon polyline = googleMap.addPolygon(rectOptions);
-        polyline.setZIndex(100);
-
-        LatLng focus = midPoint(mAlert.getLatStart(),  mAlert.getLonStart(),mAlert.getLatEnd(), mAlert.getLonEnd() );
-        LatLngBounds lngBounds= new LatLngBounds(new LatLng(mAlert.getLatEnd(), mAlert.getLonEnd()),new LatLng(mAlert.getLatStart(), mAlert.getLonStart()));
-        googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(lngBounds, 400,600,0));
+    private void setRoutes(){
+        Cursor cursor = Route.Store.fetchAllRoutes(
+                com.example.unzi.findalert.data.DatabaseHelper.getInstance(getApplicationContext()).getReadableDatabase());
+        while(cursor.moveToNext()) {
+            Route route = Route.fromCursor(cursor);
+            drawRoute(route);
+        }
+        cursor.close();
     }
 
-    private LatLng midPoint(double lat1,double lon1,double lat2,double lon2){
+    private void drawRoute(Route route) {
+        Polyline p = googleMap.addPolyline(new PolylineOptions()
+                .add(new LatLng(route.getStart_lat(), route.getStart_lng()), new LatLng(route.getEnd_lat(), route.getEnd_lng()))
+                .width(7)
+                .color(Color.BLUE));
+        p.setZIndex(151);
+        mRoutes.add(p);
+    }
+
+    private void clearRoutes() {
+        for(Polyline p : mRoutes)
+            p.remove();
+    }
+
+    private void hideAlertWindow(){
+        Log.d(TAG,"Hiding alerts");
+        View header = navigationView.getHeaderView(0);
+        header.findViewById(R.id.alertDetails).setVisibility(View.GONE);
+        header.findViewById(R.id.alert_status).setVisibility(View.GONE);
+
+        TextView tv = (TextView) header.findViewById(R.id.alert_name);
+        tv.setText("No active alerts");
+        TextView type = (TextView)  header.findViewById(R.id.alertType);
+        type.setText("");
+    }
+
+    private void setAlertWindow(Alert a){
+        Log.d(TAG,"Set nav alert window");
+
+        View header = navigationView.getHeaderView(0);
+        header.findViewById(R.id.alertDetails).setVisibility(View.VISIBLE);
+        header.findViewById(R.id.alert_status).setVisibility(View.VISIBLE);
+        TextView tv = (TextView) header.findViewById(R.id.alert_name);
+        tv.setText(a.getName() );
+        TextView type = (TextView)  header.findViewById(R.id.alertType);
+        type.setText(" - " + a.getType());
+        TextView description = (TextView)  header.findViewById(R.id.alertDescription);
+        description.setText( a.getDescription());
+        TextView date = (TextView)  header.findViewById(R.id.alertDate);
+        date.setText( a.getDate().toString());
+    }
+
+
+
+    private void clearFinishedAlert() {
+        Log.d(TAG,"Clearing last alert");
+        if(mAlertBorders!=null) {
+            Log.d(TAG,"Clearing Polyline");
+            mAlertBorders.remove();
+        }
+        View header = navigationView.getHeaderView(0);
+        TextView tv = (TextView) header.findViewById(R.id.alert_name);
+        tv.setText("No active alerts");
+
+    }
+
+    private void setAlertBounds(Alert mAlert) {
+        Log.d(TAG,"Set alert bounds");
+        if(mAlertBorders==null) {
+            PolygonOptions rectOptions = new PolygonOptions()
+                    .add(new LatLng(mAlert.getLatStart(), mAlert.getLonStart()))
+                    .add(new LatLng(mAlert.getLatEnd(), mAlert.getLonStart()))
+                    .add(new LatLng(mAlert.getLatEnd(), mAlert.getLonEnd()))
+                    .add(new LatLng(mAlert.getLatStart(), mAlert.getLonEnd()));
+
+            mAlertBorders = googleMap.addPolygon(rectOptions);
+            mAlertBorders.setZIndex(100);
+        }
+        LatLng focus = midPoint(mAlert.getLatStart(), mAlert.getLonStart(), mAlert.getLatEnd(), mAlert.getLonEnd());
+        LatLngBounds lngBounds = new LatLngBounds(new LatLng(mAlert.getLatEnd(), mAlert.getLonEnd()), new LatLng(mAlert.getLatStart(), mAlert.getLonStart()));
+        googleMap.moveCamera(CameraUpdateFactory.newLatLngBounds(lngBounds, 400, 600, 0));
+    }
+
+    private LatLng midPoint(double lat1, double lon1, double lat2, double lon2) {
 
         double dLon = Math.toRadians(lon2 - lon1);
-
         //convert to radians
         lat1 = Math.toRadians(lat1);
         lat2 = Math.toRadians(lat2);
@@ -916,5 +904,7 @@ public class MainActivity extends AppCompatActivity implements
 
         return new LatLng(Math.toDegrees(lat3), Math.toDegrees(lon3));
     }
+
+
 }
 

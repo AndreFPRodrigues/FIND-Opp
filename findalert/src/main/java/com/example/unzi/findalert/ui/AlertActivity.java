@@ -2,12 +2,17 @@ package com.example.unzi.findalert.ui;
 
 import android.app.AlertDialog;
 import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.database.Cursor;
+import android.graphics.Color;
+import android.os.Build;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
+import android.support.v4.app.NotificationCompat;
+import android.support.v4.app.TaskStackBuilder;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
@@ -69,8 +74,7 @@ public class AlertActivity extends FragmentActivity  {
             if(!mIsInside){
                 cancelNotification();
             }
-            //send alert received
-            RegisterInFind.sharedInstance(this).receivedAlert(mAlert, mIsInside);
+
         }
 
         Button b = (Button) findViewById(R.id.button);
@@ -112,6 +116,47 @@ public class AlertActivity extends FragmentActivity  {
                 (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         mNotificationManager.cancel(1);
     }
+
+    public void updateNotificationToInside(){
+        // Creates an explicit intent for an Activity in your app
+        Intent resultIntent = new Intent(getApplicationContext(), AlertActivity.class);
+
+        NotificationCompat.Builder mBuilder =null;
+        //hack to get hours and minutes to show a zero to the left
+        String hour = "0"+mAlert.getDate().getHours();
+        hour = hour.length()>2 ?hour.substring(1):hour;
+        String minutes = "0"+mAlert.getDate().getMinutes();
+        minutes = minutes.length()>2 ?minutes.substring(1):minutes;
+        String title = mAlert.getName()+" at " +hour+ ":" +minutes;
+
+                mBuilder = new NotificationCompat.Builder(getApplicationContext())
+                        .setSmallIcon(R.drawable.warning_notification)
+                        .setContentTitle(title   )
+                        .setContentText(mAlert.getDescription()).setOngoing(true);
+                if (android.os.Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    mBuilder.setColor(Color.RED);
+                }
+
+        // The stack builder object will contain an artificial back stack for the
+        // started Activity.
+        // This ensures that navigating backward from the Activity leads out of
+        // your application to the Home screen.
+        TaskStackBuilder stackBuilder = TaskStackBuilder.create(getApplicationContext());
+        // Adds the back stack for the Intent (but not the Intent itself)
+        stackBuilder.addParentStack(AlertActivity.class);
+        // Adds the Intent that starts the Activity to the top of the stack
+        stackBuilder.addNextIntent(resultIntent);
+        PendingIntent resultPendingIntent =
+                stackBuilder.getPendingIntent(
+                        0,
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                );
+        mBuilder.setContentIntent(resultPendingIntent);
+        NotificationManager mNotificationManager =
+                (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
+        // mId allows you to update the notification later on.
+        mNotificationManager.notify(1, mBuilder.build());
+    }
     public void outsideAlert(View v){
         setAlertParameters();
         findViewById(R.id.noLocationDialog).setVisibility(View.GONE);
@@ -127,6 +172,7 @@ public class AlertActivity extends FragmentActivity  {
         findViewById(R.id.alertDetails).setVisibility(View.VISIBLE);
         GcmScheduler.getInstance(getApplicationContext()).scheduleAlarm(getApplicationContext(),mAlert);
         RegisterInFind.sharedInstance(this).receivedAlert(mAlert, true);
+        updateNotificationToInside();
     }
 
     public void setAlertParameters( ) {

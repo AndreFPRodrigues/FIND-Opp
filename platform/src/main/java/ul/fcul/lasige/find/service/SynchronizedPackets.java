@@ -99,26 +99,26 @@ public class SynchronizedPackets {
             Cursor protocol = dbController.getProtocolEndpointByHash(hashProtocol);
 
 
+            if(protocol!=null) {
+                if ((endpoint = protocol.getString(4)) != null) {
+                    protocolName = protocol.getString(1);
+                    Log.d(TAG, "sending packets to: " + endpoint);
+                    Log.d(TAG, "packet id: " + packetId);
+                    Log.d(TAG, "hashProtocol: " + (hashProtocol != null));
 
-            if ((endpoint = protocol.getString(4)) != null) {
-                protocolName = protocol.getString(1);
-                Log.d(TAG, "sending packets to: " + endpoint);
-                Log.d(TAG, "packet id: " + packetId);
-                Log.d(TAG, "hashProtocol: " + (hashProtocol != null));
+                    if (packetsToSync.containsKey(endpoint)) {
+                        packetsToEndpoint = packetsToSync.get(endpoint);
+                    } else {
+                        packetsToEndpoint = new JSONArray();
+                    }
 
-                if (packetsToSync.containsKey(endpoint)) {
-                    packetsToEndpoint = packetsToSync.get(endpoint);
-                } else {
-                    packetsToEndpoint = new JSONArray();
+                    JSONObject packetJSONWrapper = createJSONByteData(Base64.encodeToString(packectData, Base64.DEFAULT), protocolName);
+                    packetsToEndpoint.put(packetJSONWrapper);
+
+                    packetsToSync.put(endpoint, packetsToEndpoint);
                 }
-
-                JSONObject packetJSONWrapper = createJSONByteData(Base64.encodeToString(packectData, Base64.DEFAULT), protocolName);
-                packetsToEndpoint.put(packetJSONWrapper);
-
-                packetsToSync.put(endpoint, packetsToEndpoint);
+                protocol.close();
             }
-            protocol.close();
-
         }
 
         for (Entry<String, JSONArray> entry : packetsToSync.entrySet()) {

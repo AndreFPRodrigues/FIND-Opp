@@ -19,6 +19,7 @@ import android.support.v7.widget.Toolbar;
 import android.text.InputFilter;
 import android.text.InputType;
 import android.text.format.DateUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
@@ -34,6 +35,7 @@ import android.widget.Toast;
 import ul.fcul.lasige.findvictim.R;
 import ul.fcul.lasige.findvictim.app.PostMessage;
 import ul.fcul.lasige.findvictim.data.DatabaseHelper;
+import ul.fcul.lasige.findvictim.data.MessageGenerator;
 
 public class MessageBoardActivity extends AppCompatActivity {
 
@@ -56,6 +58,9 @@ public class MessageBoardActivity extends AppCompatActivity {
         Toolbar toolbar = (Toolbar) findViewById(R.id.toolbar);
         setSupportActionBar(toolbar);
         getSupportActionBar().setDisplayHomeAsUpEnabled(true);
+
+        DatabaseHelper dbHelper = DatabaseHelper.getInstance(this);
+        mDb = dbHelper.getWritableDatabase();
         // Create the adapter that will return a fragment for each of the three
         // primary sections of the activity.
         /*
@@ -80,8 +85,7 @@ public class MessageBoardActivity extends AppCompatActivity {
         assert tabLayout != null;
         tabLayout.setupWithViewPager(mViewPager);
 
-        DatabaseHelper dbHelper = DatabaseHelper.getInstance(this);
-        mDb = dbHelper.getWritableDatabase();
+
 
         FloatingActionButton fab = (FloatingActionButton) findViewById(R.id.msg);
         assert fab != null;
@@ -104,8 +108,8 @@ public class MessageBoardActivity extends AppCompatActivity {
 
                         if (!check.isEmpty()) {
                             PostMessage newMsg = new PostMessage();
-                            newMsg.sender = "Me Myself and I";
-                            newMsg.sender_type = "Victim";
+                            newMsg.sender = "Me";
+                            newMsg.sender_type = "";
                             newMsg.content = message;
 
                             long currentTime = System.currentTimeMillis() / 1000L;
@@ -113,8 +117,8 @@ public class MessageBoardActivity extends AppCompatActivity {
                             newMsg.timeReceived = currentTime;
 
                             PostMessage.Store.addMessage(mDb, newMsg);
+                            enqueueTextMessage(message);
                         }
-
                         refreshCursor();
                         mMessageList.smoothScrollToPosition(0);
                         Toast.makeText(MessageBoardActivity.this, "Posted", Toast.LENGTH_SHORT).show();
@@ -130,6 +134,10 @@ public class MessageBoardActivity extends AppCompatActivity {
                 builder.show();
             }
         });
+    }
+
+    private void enqueueTextMessage(String newMsg) {
+        MessageGenerator.getSharedInstance().addTextMessage(newMsg);
     }
 
     private void refreshCursor() {
@@ -158,8 +166,7 @@ public class MessageBoardActivity extends AppCompatActivity {
             assert refresh != null;
             refresh.setRefreshing(true);
             return true;
-        }
-        else if (id == R.id.action_settings) {
+        } else if (id == R.id.action_settings) {
             return true;
         }
 
@@ -186,18 +193,18 @@ public class MessageBoardActivity extends AppCompatActivity {
         @Override
         public int getCount() {
             // Show 3 total pages.
-            return 3;
+            return 1;
         }
 
         @Override
         public CharSequence getPageTitle(int position) {
             switch (position) {
                 case 0:
-                    return "ALL";
+                    return "All";
                 case 1:
-                    return "VICTIMS";
+                    return "Rescuers";
                 case 2:
-                    return "RESCUERS";
+                    return "Command Center";
             }
             return null;
         }
@@ -230,20 +237,17 @@ public class MessageBoardActivity extends AppCompatActivity {
 
         @Override
         public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                Bundle savedInstanceState) {
+                                 Bundle savedInstanceState) {
             final View rootView = inflater.inflate(R.layout.fragment_message_board, container, false);
 
             final Cursor cursor;
-            if (getArguments().getInt(ARG_SECTION_NUMBER) == 1){
+            if (getArguments().getInt(ARG_SECTION_NUMBER) == 1) {
                 cursor = PostMessage.Store.fetchAllMessages(mDb);
-            }
-            else if (getArguments().getInt(ARG_SECTION_NUMBER) == 2){
-                cursor = PostMessage.Store.fetchVictimMessages(mDb);
-            }
-            else if (getArguments().getInt(ARG_SECTION_NUMBER) == 3) {
+            } else if (getArguments().getInt(ARG_SECTION_NUMBER) == 2) {
                 cursor = PostMessage.Store.fetchRescuerMessages(mDb);
-            }
-            else {
+            }else  if (getArguments().getInt(ARG_SECTION_NUMBER) == 3) {
+                cursor = PostMessage.Store.fetchRescuerMessages(mDb);
+            }else {
                 return rootView;
             }
 
@@ -279,6 +283,7 @@ public class MessageBoardActivity extends AppCompatActivity {
                     view.setText(content);
                     return true;
                 }
+
             });
 
             mMessageList = (ListView) rootView.findViewById(R.id.messagesList);
@@ -293,7 +298,7 @@ public class MessageBoardActivity extends AppCompatActivity {
                         newCursor = PostMessage.Store.fetchAllMessages(mDb);
                     }
                     else if (getArguments().getInt(ARG_SECTION_NUMBER) == 2){
-                        newCursor = PostMessage.Store.fetchVictimMessages(mDb);
+                        newCursor = PostMessage.Store.fetchRescuerMessages(mDb);
                     }
                     else if (getArguments().getInt(ARG_SECTION_NUMBER) == 3) {
                         newCursor = PostMessage.Store.fetchRescuerMessages(mDb);

@@ -9,7 +9,7 @@ import android.database.sqlite.SQLiteOpenHelper;
  */
 public class DatabaseHelper extends SQLiteOpenHelper {
     public static final int DATABASE_VERSION = 1;
-    public static final String DATABASE_NAME = "FindVictim.db";
+    public static final String DATABASE_NAME = "FindAlert.db";
 
     private static DatabaseHelper sInstance = null;
 
@@ -25,6 +25,8 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(Alert.Store.SQL_CREATE_TABLE);
+        db.execSQL(Route.Store.SQL_CREATE_TABLE);
+
     }
 
     @Override

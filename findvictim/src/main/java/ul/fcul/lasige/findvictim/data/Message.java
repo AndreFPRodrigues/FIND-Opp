@@ -1,6 +1,7 @@
 package ul.fcul.lasige.findvictim.data;
 
 import android.content.Context;
+import android.util.Base64;
 import android.util.Log;
 
 import org.json.JSONArray;
@@ -63,9 +64,6 @@ public class Message implements Serializable{
     public byte[] DrawImageVoiceMessage;
     // last posted text message
     public String TextMessage;
-
-    public JSONArray Routes;
-    public long RouteTime;
 
     // hash is used as an unique identifier of the message (sender, content, timesent)
     public String getHash() {
@@ -137,20 +135,32 @@ public class Message implements Serializable{
             json.put("longitude", LocationLongitude);
             json.put("accuracy", LocationAccuracy);
             json.put("locationTimestamp", LocationTimestamp);
-            json.put("movement", Movement);
-            json.put("batteryLevel", BatteryLevel);
+            json.put("Movements", Movement);
+            json.put("Battery", BatteryLevel);
             json.put("batteryTemp", BatteryTemp);
-            json.put("screenOn", ScreenOn);
+            json.put("Screen", ScreenOn);
             json.put("proximity", Proximity);
             json.put("light", Light);
             json.put("steps", StepCounter);
-            json.put("voiceMessage", Arrays.toString(VoiceMessage));
-            json.put("drawImage", Arrays.toString(DrawImage));
-            json.put("drawImageVoiceMessage", Arrays.toString(DrawImageVoiceMessage));
+
+            if(VoiceMessage!=null)
+                json.put("voiceMessage_blob", Arrays.toString(VoiceMessage));
+            if(DrawImage!=null) {
+                json.put("drawImage_blob", Base64.encodeToString(DrawImage, Base64.DEFAULT));
+                int maxLogSize = 1000;
+                String veryLongString= Base64.encodeToString(DrawImage, Base64.DEFAULT);
+                for(int i = 0; i <= veryLongString.length() / maxLogSize; i++) {
+                    int start = i * maxLogSize;
+                    int end = (i+1) * maxLogSize;
+                    end = end > veryLongString.length() ? veryLongString.length() : end;
+                    Log.e(TAG, veryLongString.substring(start, end));
+                }
+            }
+            if(DrawImageVoiceMessage!=null)
+                json.put("drawImageVoiceMessage_blob", Arrays.toString(DrawImageVoiceMessage));
             json.put("safe", 0); // TODO
-            json.put("textMessage", TextMessage);
-            json.put("routes", Routes.toString());
-            json.put("routeTime", RouteTime);
+            if(TextMessage!=null)
+                json.put("Message", TextMessage);
             json.put("isVictim", "1");
             /*json.put("status", ""); // deprecated
             json.put("statusTimestamp", 0); // deprecated

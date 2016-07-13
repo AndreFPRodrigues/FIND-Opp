@@ -47,7 +47,7 @@ public class TilesProvider implements DownloadTaskFinishedCallback,
 	protected Hashtable<String, Tile> tiles = new Hashtable<String, Tile>();
 
 	// An object to use with synchronized to lock tiles hashtable
-	public final Object tilesLock = new Object();
+	public Object tilesLock = new Object();
 
 	// A handler from the outside to be informed of new downloaded tiles
 	// Used to redraw the map view whenever a new tile arrives
@@ -93,7 +93,7 @@ public class TilesProvider implements DownloadTaskFinishedCallback,
 		synchronized (tilesLock) {
 			// Max tile index for x and y
 
-			// Prepare the query for the database
+			// Perpare the query for the database
 			String query = "SELECT x,y,image FROM tiles WHERE x == " + x
 					+ " AND y ==" + y + " AND z == " + (17 - zoom);
 			Cursor cursor;
@@ -105,7 +105,7 @@ public class TilesProvider implements DownloadTaskFinishedCallback,
 			 */
 
 			// Prepare an empty hash table to fill with the tiles we fetched
-			Hashtable<String, Tile> temp = new Hashtable<>();
+			Hashtable<String, Tile> temp = new Hashtable<String, Tile>();
 
 			// Loop through all the rows(tiles) of the table returned by the
 			// query
@@ -145,8 +145,8 @@ public class TilesProvider implements DownloadTaskFinishedCallback,
 				} while (cursor.moveToNext()); // Move to next tile in the
 				// query
 				cursor.close();
-				// The hash table "tiles" is now outdated,
-				// so clear it and set it to the new hash table temp.
+				// The hashtable "tiles" is now outdated,
+				// so clear it and set it to the new hashtable temp.
 
 				/*
 				 * Swapping here sometimes creates an exception if we use tiles
@@ -156,6 +156,7 @@ public class TilesProvider implements DownloadTaskFinishedCallback,
 				tiles = temp;
 			}
 			countDownloads++;
+			//TODO remove so it downloads
 			webProvider.downloadTile(x, y, zoom);
 
 		}
@@ -164,7 +165,7 @@ public class TilesProvider implements DownloadTaskFinishedCallback,
 		return null;
 	}
 
-	// Gets the hash table where the tiles are stored
+	// Gets the hashtable where the tiles are stored
 	public Hashtable<String, Tile> getTiles() {
 		return tiles;
 	}
@@ -176,7 +177,7 @@ public class TilesProvider implements DownloadTaskFinishedCallback,
 	}
 
 	public void clear() {
-		// Make sure no other thread is using the hash table before clearing it
+		// Make sure no other thread is using the hashtable before clearing it
 		synchronized (tilesLock) {
 			tiles.clear();
 		}

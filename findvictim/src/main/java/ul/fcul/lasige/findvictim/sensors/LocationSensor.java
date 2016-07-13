@@ -83,27 +83,30 @@ public class LocationSensor extends AbstractSensor {
 
                 Log.i(TAG, "Latitude is " + location.getLatitude()
                         + ". Longitude is " + location.getLongitude());
+                if (currentInterval == INITIAL_INTERVAL) {
+                    // first location found. Set less frequent updates
+                    currentInterval = SUBSEQUENT_INTERVAL;
+                    changedInterval = true;
+                }
 
                 if (mainContext != null) {
                     ((Activity) mainContext).runOnUiThread(new Runnable() {
                         @Override
                         public void run() {
                             GoogleMap gm = MainActivity.getGoogleMaps();
-                            gm.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 18.0f));
-                            if (marker != null)
-                                marker.remove();
-                            marker = gm.addMarker(new MarkerOptions()
-                                    .position(new LatLng(location.getLatitude(), location.getLongitude()))
-                                    .title("You"));
+                            if(gm!=null) {
+                                gm.animateCamera(CameraUpdateFactory.newLatLngZoom(new LatLng(location.getLatitude(), location.getLongitude()), 18.0f));
+                                if (marker != null)
+                                    marker.remove();
+                                marker = gm.addMarker(new MarkerOptions()
+                                        .position(new LatLng(location.getLatitude(), location.getLongitude()))
+                                        .title("You"));
+                            }
                         }
                     });
                 }
 
-                if (currentInterval == INITIAL_INTERVAL) {
-                    // first location found. Set less frequent updates
-                    currentInterval = SUBSEQUENT_INTERVAL;
-                    changedInterval = true;
-                }
+
             }
         }
     };

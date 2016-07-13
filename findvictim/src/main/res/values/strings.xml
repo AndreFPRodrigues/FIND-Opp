@@ -10,8 +10,8 @@
 
     <!-- Menu -->
     <string name="functions">Functions</string>
-    <string name="communication">Communication</string>
-    <string name="start">Start</string>
+    <string name="state">State: Idle</string>
+    <string name="idle">Idle</string>
     <string name="stop">Stop</string>
     <string name="other">Other</string>
     <string name="sos">S.O.S.</string>
@@ -33,7 +33,7 @@
     <string name="menu_refresh">Refresh</string>
 
     <!-- Additional Information Activity -->
-    <string name="info_title">Addittional Information</string>
+    <string name="info_title">Additional Information</string>
 
     <!-- Help Activity -->
     <string name="help_title">Help</string>

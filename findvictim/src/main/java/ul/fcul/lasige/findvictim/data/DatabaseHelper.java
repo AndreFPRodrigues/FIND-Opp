@@ -5,9 +5,9 @@ import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
 
 import com.example.unzi.findalert.data.Alert;
+import com.example.unzi.findalert.data.Route;
 
 import ul.fcul.lasige.findvictim.app.PostMessage;
-import ul.fcul.lasige.findvictim.app.Route;
 
 /**
  * Created by hugonicolau on 03/12/15.
@@ -30,7 +30,11 @@ public class DatabaseHelper extends SQLiteOpenHelper {
     @Override
     public void onCreate(SQLiteDatabase db) {
         db.execSQL(PostMessage.Store.SQL_CREATE_TABLE);
-        db.execSQL(Alert.Store.SQL_CREATE_TABLE);
+        //TODO shouldnt need to create table here
+        //db.execSQL(Alert.Store.SQL_CREATE_TABLE);
+        //db.execSQL(Route.Store.SQL_CREATE_TABLE);
+
+
     }
 
     @Override

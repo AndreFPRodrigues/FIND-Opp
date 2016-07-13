@@ -77,7 +77,7 @@ public class PacketSenderService extends IntentService {
      *
      * @see IntentService
      */
-    public static void startSendPacket(Context context, long neighborId, long packetId) {
+    public static void  startSendPacket(Context context, long neighborId, long packetId) {
         Log.d(TAG, "startSendPacket: " + packetId);
         Intent intent = new Intent(context, PacketSenderService.class);
         intent.setAction(ACTION_SEND_PACKET);
@@ -306,8 +306,10 @@ public class PacketSenderService extends IntentService {
             }
         } catch (IOException | NullPointerException e) {
             Log.e(TAG, "Error while sending packet " + packetId + " to neighbor " + neighborId, e);
+            e.printStackTrace();
         } finally {
             mBeaconingManager.setWifiConnectionLocked(false);
+
         }
     }
 }

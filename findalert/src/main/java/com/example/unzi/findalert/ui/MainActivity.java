@@ -164,6 +164,7 @@ public class MainActivity extends AppCompatActivity {
         public DownloadDatabase(Context c) {
             super();
             this.context = c;
+            mDialog.dismiss();
             newProgressDialog("Downloading map database. Please wait...");
         }
 

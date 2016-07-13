@@ -80,7 +80,7 @@ public class ImagePaintActivity extends AppCompatActivity {
                     miv.draw(canvas);
                     bitmap.compress(Bitmap.CompressFormat.JPEG, 25, stream);
                     stream.close();
-                    new File(Constants.IMAGE_FILE).delete();
+                   // new File(Constants.IMAGE_FILE).delete();
                     sent = true;
                     Toast.makeText(getApplicationContext(), "Picture will be sent as soon as possible", Toast.LENGTH_SHORT).show();
                     finish();

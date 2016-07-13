@@ -369,7 +369,7 @@ public class BeaconingManager implements NetworkStateChangeReceiver.NetworkChang
             // start unicast receiver
             if (mUnicastReceiver == null) {
                 mUnicastReceiver = new UdpReceiver.UdpUnicastReceiver(this);
-                mThreadPool.execute(mUnicastReceiver);
+                    mThreadPool.execute(mUnicastReceiver);
             }
 
             // start multicast receiver

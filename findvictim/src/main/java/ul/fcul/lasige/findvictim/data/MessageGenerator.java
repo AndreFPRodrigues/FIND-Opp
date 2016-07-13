@@ -2,39 +2,56 @@ package ul.fcul.lasige.findvictim.data;
 
 import android.annotation.TargetApi;
 import android.content.Context;
-import android.database.Cursor;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.location.Location;
 import android.os.Build;
 import android.util.Log;
 
-import org.json.JSONArray;
-import org.json.JSONException;
-import org.json.JSONObject;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.Calendar;
+import java.util.GregorianCalendar;
+import java.util.LinkedList;
+import java.util.TimeZone;
 
 import ul.fcul.lasige.findvictim.app.Constants;
-import ul.fcul.lasige.findvictim.app.Route;
 import ul.fcul.lasige.findvictim.sensors.SensorManager;
 import ul.fcul.lasige.findvictim.sensors.SensorsService;
-import ul.fcul.lasige.findvictim.ui.MainActivity;
 
 /**
  * Created by hugonicolau on 26/11/15.
  */
 public class MessageGenerator {
+    private  final LinkedList<String> mTextMessages ;
+    private static  MessageGenerator mSharedInstance;
+    private GenerateMessageTask genarator;
+    public static MessageGenerator getSharedInstance(){
+        if(mSharedInstance==null)
+            mSharedInstance=new MessageGenerator();
+        return mSharedInstance;
+    }
 
-    public static class GenerateMessageTask implements Runnable {
-        private static final String TAG = GenerateMessageTask.class.getSimpleName();
+    private MessageGenerator(){
+        mTextMessages = new LinkedList<String>();
+    }
+
+    public GenerateMessageTask startMessageGenaration(Context context, SensorManager sensormanager, SensorsService sensorsService){
+        genarator= new GenerateMessageTask(context, sensormanager, sensorsService);
+        return genarator;
+    }
+    public class GenerateMessageTask implements Runnable {
+        private  final String TAG = GenerateMessageTask.class.getSimpleName();
 
         private final SensorManager mSensorsManager;
         private final SensorsService mSensorService;
         private final Context mContext;
         private final String mMacAdress;
+
 
         public GenerateMessageTask(Context context, SensorManager sensormanager, SensorsService sensorsService) {
             super();
@@ -43,6 +60,7 @@ public class MessageGenerator {
             mContext = context;
             Log.d(TAG, "GenerateMessageTask");
             mMacAdress= com.example.unzi.findalert.data.TokenStore.getMacAddress(context);
+
         }
 
         @TargetApi(Build.VERSION_CODES.KITKAT)
@@ -69,10 +87,15 @@ public class MessageGenerator {
             Log.d(TAG, "###  light " + light);
             Log.d(TAG, "###  step counter " + stepCounter);
 
+            Calendar c = Calendar.getInstance();
+            Calendar calendar = new GregorianCalendar(c.getTimeZone());
+          long seconds =calendar.getTimeInMillis();
+            Log.d(TAG, "Time generated:" + seconds);
+            int gmtOffset2 = TimeZone.getDefault().getOffset(seconds);
             // build message
             Message message = new Message();
             message.OriginMac = mMacAdress;
-            message.TimeSent = System.currentTimeMillis();
+            message.TimeSent = seconds+gmtOffset2;//System.currentTimeMillis();
             message.TimeReceived = -1;
             message.Movement = movement;
             message.BatteryLevel = batteryLevel;
@@ -85,8 +108,17 @@ public class MessageGenerator {
                 message.LocationLatitude = location.getLatitude();
                 message.LocationLongitude = location.getLongitude();
                 message.LocationAccuracy = location.getAccuracy();
-                message.LocationTimestamp = location.getTime();
+                Log.d(TAG, "gmt time location:" + location.getTime());
+                int gmtOffset = TimeZone.getDefault().getOffset(location.getTime());
+                Log.d(TAG,"gmt time offset:"+gmtOffset);
+                message.LocationTimestamp = location.getTime()+gmtOffset;
             }
+
+            if(mTextMessages.size()>0){
+                message.TextMessage= mTextMessages.poll();
+            }
+
+
             File f = new File(Constants.SAVE_VOICE_MESSAGE);
 
             if (f.exists()) {
@@ -94,35 +126,56 @@ public class MessageGenerator {
                 f.delete();
             }
 
-            f = new File(Constants.SAVE_DRAW_IMAGE);
+            f = new File(Constants.SAVE_IMAGE);
             File ff = new File(Constants.SAVE_DRAW_VOICE_MESSAGE);
-            Log.d(TAG, "@@@ voice message: " + f.exists() + " " + Constants.SAVE_DRAW_IMAGE);
+            Log.d(TAG, "@@@ voice message: " + f.exists() + " " + Constants.SAVE_IMAGE);
             Log.d(TAG, "@@@ voice message: " + ff.exists() + " " + Constants.SAVE_DRAW_VOICE_MESSAGE);
             if (f.exists() && ff.exists()) {
-                message.DrawImage = convertFileToByteArray(f);
+                message.DrawImage = getBytesFromBitmap(f);
                 f.delete();
                 message.DrawImageVoiceMessage = convertFileToByteArray(ff);
                 ff.delete();
             }
 
-            JSONArray array = new JSONArray();
-            try (Cursor c = Route.Store.fetchAllRoutes(MainActivity.getDB())) {
-                while (c.moveToNext()) {
-                    JSONObject json2 = new JSONObject();
-                    json2.put("start_lat", c.getDouble(c.getColumnIndex("start_lat")));
-                    json2.put("end_lat", c.getDouble(c.getColumnIndex("end_lat")));
-                    json2.put("start_lng", c.getDouble(c.getColumnIndex("start_lng")));
-                    json2.put("end_kng", c.getDouble(c.getColumnIndex("end_lng")));
-                    array.put(json2);
-                }
-            } catch (JSONException e) {
-                e.printStackTrace();
-            }
-            message.Routes = array;
-
             // send message
             mSensorService.sendMessage(message);
         }
+    }
+
+    public byte[] getBytesFromBitmap(File imagefile) {
+
+
+
+        Bitmap bitmap = decodeFile(imagefile);
+        ByteArrayOutputStream stream = new ByteArrayOutputStream();
+        bitmap.compress(Bitmap.CompressFormat.JPEG, 20, stream);
+        return stream.toByteArray();
+    }
+
+    // Decodes image and scales it to reduce memory consumption
+    private Bitmap decodeFile(File f) {
+        try {
+            // Decode image size
+            BitmapFactory.Options o = new BitmapFactory.Options();
+            o.inJustDecodeBounds = true;
+            BitmapFactory.decodeStream(new FileInputStream(f), null, o);
+
+            // The new size we want to scale to
+            final int REQUIRED_SIZE=200;
+
+            // Find the correct scale value. It should be the power of 2.
+            int scale = 1;
+            while(o.outWidth / scale / 2 >= REQUIRED_SIZE &&
+                    o.outHeight / scale / 2 >= REQUIRED_SIZE) {
+                scale *= 2;
+            }
+
+            // Decode with inSampleSize
+            BitmapFactory.Options o2 = new BitmapFactory.Options();
+            o2.inSampleSize = scale;
+            return BitmapFactory.decodeStream(new FileInputStream(f), null, o2);
+        } catch (FileNotFoundException e) {}
+        return null;
     }
 
     private static byte[] convertFileToByteArray(File f) {
@@ -143,5 +196,9 @@ public class MessageGenerator {
             e.printStackTrace();
         }
         return byteArray;
+    }
+
+    public void addTextMessage(String message){
+        mTextMessages.add(message);
     }
 }

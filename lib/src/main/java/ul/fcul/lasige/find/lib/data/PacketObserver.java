@@ -94,12 +94,20 @@ public class PacketObserver extends ContentObserver {
     public void onChange(boolean selfChange, Uri uri) {
         // get all packets since last one received; this is particularly useful if client app was
         // disconnected and the platform received new packets
-        for (Packet packet : getPacketsSince(mTimeLastPacketReceived)) {
+        ArrayList<Packet> packets = (ArrayList<Packet>) getPacketsSince(mTimeLastPacketReceived);
+        Log.d(TAG, "Packets received size:"+ packets.size());
+        Log.d(TAG, "Packets received From:"+ mTimeLastPacketReceived);
+
+        for (Packet packet : packets) {
             // set timestamp to last packet received; Math.max is to guarantee we don't go back in time
             mTimeLastPacketReceived = Math.max(mTimeLastPacketReceived, packet.getTimeReceived());
+            Log.d(TAG, "Packets receive time:"+ packet.getTimeReceived());
+
             // notifies client app of new packet received
             mCallback.onPacketReceived(packet, mObservedUri);
         }
+        Log.d(TAG, "Packets next time From:"+ mTimeLastPacketReceived);
+
         // save last timestamp persistently
         TokenStore.saveLastPacketReceived(mContext, mTimeLastPacketReceived);
     }
@@ -150,6 +158,7 @@ public class PacketObserver extends ContentObserver {
     public List<Packet> getPacketsSince(long timestamp) {
         final ArrayList<Packet> newPackets = new ArrayList<>();
         // call Platform.data.FindProvider
+        Log.d(TAG, "Querying for:" +mObservedUri + " " + timestamp);
         final Cursor newPacketsCursor = mContext.getContentResolver().query(
                 mObservedUri,
                 null,
