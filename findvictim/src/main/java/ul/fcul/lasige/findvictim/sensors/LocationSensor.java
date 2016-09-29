@@ -186,16 +186,22 @@ public class LocationSensor extends AbstractSensor {
      *
      * @param locListener location listener to receive coordinate updates
      */
+   /* private String lastProvider="";
+    private int lastInterval=0;*/
     private void registerLocationListeners(LocationListener locListener) {
-        Log.d(TAG, "registering location listener");
-        unregisterLocationListener(locListener);
-        try {
+        /*Log.d(TAG, "registering location listener");
+        if(!lastProvider.equals(currentProvider) || currentInterval!=lastInterval) {
+            lastInterval = currentInterval;
+            lastProvider = currentProvider;*/
+            unregisterLocationListener(locListener);
+            try {
 
-            mLocManager.requestLocationUpdates(currentProvider, currentInterval,
-                    DISTANCE, locListener);
-        } catch (SecurityException e) {
-            Log.e(TAG, "Location services permissions are not enabled!");
-        }
+                mLocManager.requestLocationUpdates(currentProvider, currentInterval,
+                        DISTANCE, locListener);
+            } catch (SecurityException e) {
+                Log.e(TAG, "Location services permissions are not enabled!");
+            }
+        //}
     }
 
     private String getBestProvider() {
@@ -229,21 +235,24 @@ public class LocationSensor extends AbstractSensor {
         @Override
         public void run() {
             Log.i(TAG, "run");
+            Log.i(TAG, "Previous provider: " + currentProvider);
 
             if (betterConnectionAvailable()) {
                 // change provider
                 currentProvider = currentProvider
                         .equals(LocationManager.GPS_PROVIDER) ? LocationManager.NETWORK_PROVIDER
                         : LocationManager.GPS_PROVIDER;
-                Log.i(TAG, "Chosen provider: " + currentProvider);
                 registerLocationListeners(locationListener);
+                Log.i(TAG, "Chosen provider: " + currentProvider);
             } else if (changedInterval) {
                 // register again for the changes to take effect
                 registerLocationListeners(locationListener);
                 changedInterval = false;
                 Log.i(TAG, "changed interval");
             }
-            handler.postDelayed(mRunnable, currentInterval);
+            //
+
+            handler.postDelayed(mRunnable, SUBSEQUENT_INTERVAL);
         }
 
     };

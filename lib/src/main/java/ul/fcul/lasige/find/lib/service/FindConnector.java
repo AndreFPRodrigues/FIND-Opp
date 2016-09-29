@@ -534,6 +534,8 @@ public class FindConnector implements Handler.Callback {
     public List<Packet> getOutgoingPackets(String protocolToken) {
         if (mPlatformAvailable) {
             if(protocolToken == null) return new ArrayList<>();
+            Log.d(TAG, "Retriving packets to sync outgoing packets to protocol:" + protocolToken);
+
             // get URI for outgoing message
             Uri packetUri = FindContract.buildProtocolUri(FindContract.Packets.URI_OUTGOING, protocolToken);
             // get content resolver

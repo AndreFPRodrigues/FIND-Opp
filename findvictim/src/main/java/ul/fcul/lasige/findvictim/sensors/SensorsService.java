@@ -218,6 +218,7 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
 
     @Override
     public void onDestroy() {
+        Log.d(TAG,"destroying sensor service");
         // stop all sensors
         mSensorManager.removeAllSensors(true);
 
@@ -431,6 +432,8 @@ public class SensorsService extends Service implements PacketObserver.PacketCall
                 }*/
 
             } catch (UnsupportedEncodingException e) {
+                Log.d(TAG, "Error enqueing message message");
+
                 e.printStackTrace();
             }
         } else {

@@ -2,6 +2,7 @@ package ul.fcul.lasige.findvictim.data;
 
 import android.annotation.TargetApi;
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.location.Location;
@@ -19,6 +20,7 @@ import java.util.GregorianCalendar;
 import java.util.LinkedList;
 import java.util.TimeZone;
 
+import ul.fcul.lasige.findvictim.R;
 import ul.fcul.lasige.findvictim.app.Constants;
 import ul.fcul.lasige.findvictim.sensors.SensorManager;
 import ul.fcul.lasige.findvictim.sensors.SensorsService;
@@ -63,7 +65,7 @@ public class MessageGenerator {
 
         }
 
-        @TargetApi(Build.VERSION_CODES.KITKAT)
+        //@TargetApi(Build.VERSION_CODES.KITKAT)
         @Override
         public void run() {
             // generate message
@@ -104,7 +106,7 @@ public class MessageGenerator {
             message.Proximity = proximity;
             message.Light = light;
             message.StepCounter = stepCounter;
-            if(location != null) {
+            if(location != null && location.getLatitude()!=0) {
                 message.LocationLatitude = location.getLatitude();
                 message.LocationLongitude = location.getLongitude();
                 message.LocationAccuracy = location.getAccuracy();
@@ -112,6 +114,20 @@ public class MessageGenerator {
                 int gmtOffset = TimeZone.getDefault().getOffset(location.getTime());
                 Log.d(TAG,"gmt time offset:"+gmtOffset);
                 message.LocationTimestamp = location.getTime()+gmtOffset;
+            }else{
+                Log.d(TAG,"lat is?" +message.LocationLatitude);
+
+                if(Double.isNaN(message.LocationLatitude)){
+                    Log.d(TAG,"what lat?");
+
+                    SharedPreferences sharedPref = mContext.getSharedPreferences(mContext.getString(R.string.shared_preferences),Context.MODE_PRIVATE);
+                    message.LocationLatitude = sharedPref.getFloat(mContext.getString(R.string.sharedlat), 0);
+                    message.LocationLongitude = sharedPref.getFloat(mContext.getString(R.string.sharedlon), 0);
+                    message.LocationAccuracy = sharedPref.getFloat(mContext.getString(R.string.sharedaccuracy), 0);
+                    message.LocationTimestamp = sharedPref.getLong(mContext.getString(R.string.sharedlocationtime), 0);
+                    Log.d(TAG,"get lat? " +sharedPref.getFloat(mContext.getString(R.string.sharedlon),0));
+
+                }
             }
 
             if(mTextMessages.size()>0){

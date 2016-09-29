@@ -6,6 +6,7 @@ import android.app.PendingIntent;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
 import android.graphics.Color;
 import android.location.Location;
 import android.media.Ringtone;
@@ -68,12 +69,15 @@ public class GcmScheduler {
         startIntent.putExtra(EXTRA_ALERT_ID, alert.getAlertID());
 
         mStartSensorsIntent = PendingIntent.getBroadcast(context, 0,
-                startIntent, PendingIntent.FLAG_UPDATE_CURRENT); // TODO alarmmanager only guarantees one start alarm
-
+                startIntent, PendingIntent.FLAG_UPDATE_CURRENT); // TODO alarmmanager only guarantees one start alarmalert
         // get starting time
         Date date = alert.getDate();
         if (date != null) {
-            mAlarmManager.set(AlarmManager.RTC_WAKEUP, date.getTime(), mStartSensorsIntent);
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                mAlarmManager.setExact(AlarmManager.RTC_WAKEUP, date.getTime(), mStartSensorsIntent);
+            }else {
+                mAlarmManager.set(AlarmManager.RTC_WAKEUP, date.getTime(), mStartSensorsIntent);
+            }
             Log.d(TAG, "Alert scheduled to start at " + date.toString());
         }
 
@@ -88,8 +92,17 @@ public class GcmScheduler {
         // get stopping time
         long duration = alert.getDuration();
         if (duration != -1) {
-            mAlarmManager.set(AlarmManager.RTC_WAKEUP, date.getTime() + duration, mStopSensorsIntent);
-            Log.d(TAG, "Alert scheduled to stop at " + new Date(date.getTime() + duration).toString());
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                mAlarmManager.setExact(AlarmManager.RTC_WAKEUP, date.getTime() + duration, mStopSensorsIntent);
+                Log.d(TAG, "Set exact alert stop at " + new Date(date.getTime() + duration).toString());
+
+            }else {
+                mAlarmManager.set(AlarmManager.RTC_WAKEUP, date.getTime() + duration, mStopSensorsIntent);
+                Log.d(TAG, "Alert scheduled to stop at " + new Date(date.getTime() + duration).toString());
+
+            }
+            Log.d(TAG, "Alert to stop at " + new Date(date.getTime() ).toString()+ " " + duration);
+
         }
     }
 
@@ -227,6 +240,13 @@ public class GcmScheduler {
                 }else {
                     if (PositionUtils.isInLocation(location.getLatitude(), location.getLongitude(), alert.getLatStart(),
                             alert.getLonStart(), alert.getLatEnd(), alert.getLonEnd())) {
+                        SharedPreferences sharedPref = applicationContext.getSharedPreferences(applicationContext.getString(R.string.shared_preferences),Context.MODE_PRIVATE);
+                        SharedPreferences.Editor editor = sharedPref.edit();
+                        editor.putFloat( applicationContext.getString(R.string.sharedlat), (float) location.getLatitude());
+                        editor.putFloat( applicationContext.getString(R.string.sharedlon), (float) location.getLongitude());
+                        editor.putFloat( applicationContext.getString(R.string.sharedaccuracy),  location.getAccuracy());
+                        editor.putLong( applicationContext.getString(R.string.sharedlocationtime), location.getTime());
+                        editor.commit();
                         Log.d(TAG, "In location ");
 
                         alertNotification(applicationContext, alert, Alert.DANGER.IN_LOCATION);
